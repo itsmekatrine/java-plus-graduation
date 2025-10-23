@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.category.NewCategoryDto;
 import ru.practicum.entity.Category;
+import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.mapper.CategoryMapper;
 import ru.practicum.repository.CategoryRepository;
@@ -23,6 +24,9 @@ public class CategoryService {
 
     @Transactional
     public CategoryDto save(NewCategoryDto dto) {
+        if (categoryRepository.existsByNameIgnoreCase(dto.getName())) {
+            throw new ConflictException("Category name is already in use");
+        }
         Category saved = categoryRepository.save(mapper.toEntity(dto));
         return mapper.toDto(saved);
     }
@@ -39,6 +43,11 @@ public class CategoryService {
     public CategoryDto update(CategoryDto dto) {
         Category category = categoryRepository.findById(dto.getId())
                 .orElseThrow(() -> new NotFoundException("Category with id=" + dto.getId() + " was not found"));
+
+        if (categoryRepository.existsByNameIgnoreCaseAndIdNot(dto.getName(), dto.getId())) {
+            throw new ConflictException("Category name is already in use");
+        }
+
         category.setName(dto.getName());
         categoryRepository.saveAndFlush(category);
         return mapper.toDto(category);

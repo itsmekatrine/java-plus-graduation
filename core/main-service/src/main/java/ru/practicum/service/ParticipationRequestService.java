@@ -57,6 +57,10 @@ public class ParticipationRequestService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found"));
 
+        if (requestRepository.existsByRequester_IdAndEvent_Id(userId, eventId)) {
+            throw new ConflictException("Participation request already exists");
+        }
+
         if (event.getInitiator().getId().equals(userId)) {
             throw new ConflictException("Initiator cannot request participation in their own event");
         }

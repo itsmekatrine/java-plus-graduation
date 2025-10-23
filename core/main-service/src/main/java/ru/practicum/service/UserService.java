@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.user.NewUserRequest;
 import ru.practicum.dto.user.UserDto;
 import ru.practicum.entity.User;
+import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.mapper.UserMapper;
 import ru.practicum.parameters.UserAdminSearchParam;
@@ -24,6 +25,10 @@ public class UserService {
 
     @Transactional
     public UserDto create(NewUserRequest user) {
+        if (userRepository.existsByEmailIgnoreCase(user.getEmail())) {
+            throw new ConflictException("Email is already in use");
+        }
+
         User saved = userRepository.save(mapper.toEntity(user));
         return mapper.toDto(saved);
     }

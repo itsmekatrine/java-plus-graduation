@@ -14,7 +14,10 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 @NoArgsConstructor
-@Table(name = "category")
+@Table(
+        name = "category",
+        uniqueConstraints = @UniqueConstraint(name = "uq_category_name", columnNames = "name")
+)
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

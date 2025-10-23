@@ -9,7 +9,10 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "users")
+@Table(
+        name = "users",
+        uniqueConstraints = @UniqueConstraint(name = "uq_users_email", columnNames = "email")
+)
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

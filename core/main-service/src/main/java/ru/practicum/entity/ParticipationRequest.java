@@ -12,7 +12,10 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "participation_request")
+@Table(
+        name = "participation_request",
+        uniqueConstraints = @UniqueConstraint(name = "uq_request_event_requester", columnNames = {"event_id", "requester_id"})
+)
 public class ParticipationRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,10 +1,3 @@
-CREATE TABLE IF NOT EXISTS public.users (
-    id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(250) NOT NULL,
-    email VARCHAR(254) NOT NULL,
-    CONSTRAINT users_email_unique UNIQUE (email)
-);
-
 CREATE TABLE IF NOT EXISTS public.category (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE
@@ -30,10 +23,6 @@ CREATE TABLE IF NOT EXISTS public.event (
         FOREIGN KEY (category_id)
         REFERENCES public.category(id)
         ON DELETE RESTRICT,  -- Запрет удаления используемой категории
-    CONSTRAINT event_users_fk
-        FOREIGN KEY (initiator_id)
-        REFERENCES public.users(id)
-        ON DELETE CASCADE,  -- Удаление событий при удалении организатора
     CONSTRAINT event_state_check
         CHECK (state IN ('PENDING', 'PUBLISHED', 'CANCELED'))
 );
@@ -64,10 +53,6 @@ CREATE TABLE IF NOT EXISTS public.participation_request (
     event_id BIGINT NOT NULL,
     status VARCHAR(32) NOT NULL,
     created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT participation_request_users_fk
-        FOREIGN KEY (requester_id)
-        REFERENCES public.users(id)
-        ON DELETE CASCADE,  -- Удаление запросов при удалении пользователя
     CONSTRAINT participation_request_event_fk
         FOREIGN KEY (event_id)
         REFERENCES public.event(id)
@@ -88,10 +73,6 @@ CREATE TABLE IF NOT EXISTS public.comment (
 	CONSTRAINT comment_event_fk FOREIGN KEY (event_id)
 		REFERENCES public."event"(id)
 		ON DELETE CASCADE,
-	CONSTRAINT comment_users_fk
-		FOREIGN KEY (author_id)
-		REFERENCES public.users(id)
-		ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS public.comment_pre_moderation (

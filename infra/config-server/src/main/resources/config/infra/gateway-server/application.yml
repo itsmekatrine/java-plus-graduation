@@ -8,5 +8,19 @@ spring:
           predicates:
             - Path=/**
 
+        - id: user_service_route
+          uri: lb://user-service
+          predicates:
+            - Path=/admin/users/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    gateway:
+      enabled: true
+
 server:
   port: 8080

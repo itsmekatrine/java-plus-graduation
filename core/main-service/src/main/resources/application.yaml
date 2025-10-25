@@ -1,12 +1,14 @@
 spring:
   application:
-    name: stats-server
+    name: main-service
   config:
-    import: "configserver:"
+    import:
+      - "optional:configserver:${SPRING_CLOUD_CONFIG_URI}"
+      - "optional:configserver:"
   cloud:
     config:
       discovery:
-        enabled: true
+        enabled: ${CONFIG_DISCOVERY:true}
         serviceId: config-server
       fail-fast: true
       retry:

@@ -1,6 +1,6 @@
 spring:
   application:
-    name: stats-server
+    name: gateway-server
   config:
     import: "configserver:"
   cloud:
@@ -19,3 +19,6 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
   instance:
     preferIpAddress: true
+    hostname: localhost
+    instance-id: "${spring.application.name}:${random.value}"
+    leaseRenewalIntervalInSeconds: 10

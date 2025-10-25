@@ -11,9 +11,11 @@
     </parent>
 
     <name>Explore With Me</name>
+
     <modules>
         <module>stats</module>
-        <module>main-service</module>
+        <module>core</module>
+        <module>infra</module>
     </modules>
 
     <groupId>ru.practicum</groupId>
@@ -29,6 +31,7 @@
         <org.projectlombok.version>1.18.30</org.projectlombok.version>
         <org.zalando.version>3.7.2</org.zalando.version>
         <org.testcontainers.version>1.16.1</org.testcontainers.version>
+        <spring-cloud-dependencies.version>2023.0.3</spring-cloud-dependencies.version>
     </properties>
 
     <dependencyManagement>
@@ -56,6 +59,14 @@
                 <artifactId>postgresql</artifactId>
                 <version>${org.testcontainers.version}</version>
                 <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud-dependencies.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

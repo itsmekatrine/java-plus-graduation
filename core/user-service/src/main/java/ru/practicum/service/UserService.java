@@ -41,6 +41,13 @@ public class UserService {
         userRepository.deleteById(userId);
     }
 
+    @Transactional(readOnly = true)
+    public UserDto getUserById(Long userId) {
+        return userRepository.findById(userId)
+                .map(mapper::toDto)
+                .orElseThrow(() -> new NotFoundException("User with id=" + userId + " was not found"));
+    }
+
     public List<UserDto> getUsers(UserAdminSearchParam params) {
         Page<User> users;
         if (params.getIds() != null) {

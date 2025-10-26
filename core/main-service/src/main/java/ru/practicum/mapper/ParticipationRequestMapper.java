@@ -8,7 +8,7 @@ import ru.practicum.entity.ParticipationRequest;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface ParticipationRequestMapper {
-    @Mapping(target = "event", source = "request.event.id")
-    @Mapping(target = "requester", source = "request.requester.id")
+    @Mapping(target = "event", source = "event.id")
+    @Mapping(target = "requester", source = "requesterId")
     ParticipationRequestDto toDto(ParticipationRequest request);
 }

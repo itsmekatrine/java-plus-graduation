@@ -9,10 +9,10 @@ import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.entity.*;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.feign.UserClient;
 import ru.practicum.mapper.ParticipationRequestMapper;
 import ru.practicum.repository.EventRepository;
 import ru.practicum.repository.ParticipationRequestRepository;
-import ru.practicum.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,14 +25,14 @@ public class ParticipationRequestService {
 
     private final ParticipationRequestRepository requestRepository;
     private final EventRepository eventRepository;
-    private final UserRepository userRepository;
+    private final UserClient userClient;
 
     private final ParticipationRequestMapper requestMapper;
 
     public List<ParticipationRequestDto> getRequestForEventByUserId(Long eventId, Long userId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event id" + eventId + "not found"));
-        if (!Objects.equals(event.getInitiator().getId(), userId)) {
+        if (!Objects.equals(event.getInitiatorId(), userId)) {
             throw new ConflictException("Can't get request for event id=" + eventId + "by user id=" + userId);
         }
         List<ParticipationRequest> requests = requestRepository.findAllByEventId(eventId);
@@ -42,8 +42,7 @@ public class ParticipationRequestService {
     }
 
     public List<ParticipationRequestDto> getRequestsByUser(Long userId) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        userClient.getUserById(userId);
         return requestRepository.findAllByRequesterId(userId)
                 .stream()
                 .map(requestMapper::toDto)
@@ -52,8 +51,7 @@ public class ParticipationRequestService {
 
     @Transactional
     public ParticipationRequestDto createRequest(Long userId, Long eventId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        userClient.getUserById(userId);
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found"));
 
@@ -61,7 +59,7 @@ public class ParticipationRequestService {
             throw new ConflictException("Participation request already exists");
         }
 
-        if (event.getInitiator().getId().equals(userId)) {
+        if (event.getInitiatorId().equals(userId)) {
             throw new ConflictException("Initiator cannot request participation in their own event");
         }
 
@@ -75,7 +73,7 @@ public class ParticipationRequestService {
         }
 
         ParticipationRequest request = new ParticipationRequest();
-        request.setRequester(user);
+        request.setRequesterId(userId);
         request.setEvent(event);
 
         if (event.getParticipantLimit() == 0) {
@@ -95,7 +93,7 @@ public class ParticipationRequestService {
         List<ParticipationRequest> requestList = requestRepository.findAllById(updateRequest.getRequestIds());
         Event event = eventRepository
                 .findById(eventId).orElseThrow(() -> new NotFoundException("There is no event id=" + eventId));
-        if (!Objects.equals(event.getInitiator().getId(), userId)) {
+        if (!Objects.equals(event.getInitiatorId(), userId)) {
             throw new ConflictException("Can't update event id=" + eventId + " requests by user id=" + userId);
         }
         updateRequests(requestList, updateRequest.getStatus(), event);
@@ -115,7 +113,7 @@ public class ParticipationRequestService {
         ParticipationRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException("Request not found"));
 
-        if (!request.getRequester().getId().equals(userId)) {
+        if (!request.getRequesterId().equals(userId)) {
             throw new ConflictException("User is not the requester");
         }
 

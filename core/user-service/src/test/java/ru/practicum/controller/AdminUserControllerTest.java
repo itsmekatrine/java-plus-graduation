@@ -4,22 +4,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.controller.adminAPI.AdminUserController;
-import ru.practicum.dto.user.NewUserRequest;
-import ru.practicum.dto.user.UserDto;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import ru.practicum.dto.NewUserRequest;
+import ru.practicum.dto.UserDto;
 import ru.practicum.service.UserService;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Slf4j
 @WebMvcTest(AdminUserController.class)
@@ -45,19 +44,19 @@ class AdminUserControllerTest {
                 .name("expected")
                 .build();
 
-        when(service.create(income)).thenReturn(expected);
+        Mockito.when(service.create(income)).thenReturn(expected);
 
-        String contentAsString = mvc.perform(post("/admin/users")
+        String contentAsString = mvc.perform(MockMvcRequestBuilders.post("/admin/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(income)))
-                .andExpect(status().is(201))
+                .andExpect(MockMvcResultMatchers.status().is(201))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
-        verify(service, times(1)).create(income);
+        Mockito.verify(service, Mockito.times(1)).create(income);
         verifyNoMoreInteractions(service);
-        assertThat(contentAsString).isEqualTo(objectMapper.writeValueAsString(expected));
+        Assertions.assertThat(contentAsString).isEqualTo(objectMapper.writeValueAsString(expected));
     }
 
     @Test
@@ -67,10 +66,10 @@ class AdminUserControllerTest {
                 .email("123456")
                 .name("name")
                 .build();
-        assertThat(mvc.perform(post("/admin/users")
+        Assertions.assertThat(mvc.perform(MockMvcRequestBuilders.post("/admin/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(income)))
-                .andExpect(status().is(400))
+                .andExpect(MockMvcResultMatchers.status().is(400))
                 .andReturn()
                 .getResponse()
                 .getContentAsString()).contains("email");
@@ -84,10 +83,10 @@ class AdminUserControllerTest {
                 .name("   ")
                 .build();
 
-        assertThat(mvc.perform(post("/admin/users")
+        Assertions.assertThat(mvc.perform(MockMvcRequestBuilders.post("/admin/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(income)))
-                .andExpect(status().is(400))
+                .andExpect(MockMvcResultMatchers.status().is(400))
                 .andReturn()
                 .getResponse()
                 .getContentAsString()).contains("name").contains("blank");
@@ -97,7 +96,7 @@ class AdminUserControllerTest {
     @SneakyThrows
     void deleteUserById() {
         long userId = 1L;
-        mvc.perform(delete("/admin/users/{userId}", userId))
-                .andExpect(status().is(204));
+        mvc.perform(MockMvcRequestBuilders.delete("/admin/users/{userId}", userId))
+                .andExpect(MockMvcResultMatchers.status().is(204));
     }
 }

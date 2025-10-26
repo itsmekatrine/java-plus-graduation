@@ -9,11 +9,11 @@ import ru.practicum.entity.*;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.ForbiddenException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.feign.UserClient;
 import ru.practicum.mapper.CommentMapper;
 import ru.practicum.repository.CommentRepository;
 import ru.practicum.repository.EventRepository;
 import ru.practicum.repository.ParticipationRequestRepository;
-import ru.practicum.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -27,7 +27,7 @@ import java.util.Set;
 public class CommentService {
 
     private final EventRepository eventRepository;
-    private final UserRepository userRepository;
+    private final UserClient userClient;
     private final CommentRepository commentRepository;
     private final ParticipationRequestRepository requestRepository;
     private final CommentMapper mapper;
@@ -39,14 +39,13 @@ public class CommentService {
         if (event.getState() != EventState.PUBLISHED) {
             throw new ForbiddenException("Событие должно быть опубликовано");
         }
-        User author = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+        userClient.getUserById(userId);
 
         validateContent(dto.getContent(), event.getForbiddenWords());
 
         Comment comment = new Comment();
         comment.setEvent(event);
-        comment.setAuthor(author);
+        comment.setAuthorId(userId);
         comment.setContent(dto.getContent());
         comment.setCreated(LocalDateTime.now());
         comment.setUpdated(LocalDateTime.now());
@@ -66,7 +65,7 @@ public class CommentService {
     public void addPreModeration(Long userId, Long eventId, PreModerationRequest preModerationDto) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Событие не найдено"));
-        if (!event.getInitiator().getId().equals(userId)) {
+        if (!event.getInitiatorId().equals(userId)) {
             throw new ForbiddenException("Только инициатор события может устанавливать премодерацию");
         }
         if (event.getForbiddenWords() == null) {
@@ -87,7 +86,7 @@ public class CommentService {
         if (!Objects.equals(event.getId(), comment.getEvent().getId())) {
             throw new ConflictException("Собысте в пути запроса и событие комментария не совпадают");
         }
-        if (comment.getAuthor() == null || !comment.getAuthor().getId().equals(userId)) {
+        if (!Objects.equals(comment.getAuthorId(), userId)) {
             throw new ForbiddenException("Редактировать можно только свои комментарии");
         }
 
@@ -125,7 +124,7 @@ public class CommentService {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new NotFoundException("Комментарий не найден"));
 
-        if (!comment.getAuthor().getId().equals(userId)) {
+        if (!comment.getAuthorId().equals(userId)) {
             throw new ForbiddenException("Удалять можно только свои комментарии");
         }
         commentRepository.delete(comment);

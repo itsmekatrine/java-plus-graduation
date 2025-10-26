@@ -12,12 +12,12 @@ import ru.practicum.entity.Comment;
 public interface CommentMapper {
 
     @Mapping(target = "event", source = "event.id")
-    @Mapping(target = "author", source = "author.id")
+    @Mapping(target = "author", source = "authorId")
     CommentDto toDto(Comment comment);
 
     @Mapping(target = "event", source = "event.id")
     CommentWithUserDto toWithUserDto(Comment comment);
 
-    @Mapping(target = "author", source = "author.id")
+    @Mapping(target = "author", source = "authorId")
     CommentWithEventDto toWithEventDto(Comment comment);
 }

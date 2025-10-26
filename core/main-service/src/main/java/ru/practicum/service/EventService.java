@@ -118,7 +118,7 @@ public class EventService {
     public EventFullDto getEventByIdAndUserId(Long eventId, Long userId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Событие не найдено"));
-        if (!Objects.equals(event.getInitiator().getId(), userId)) {
+        if (!Objects.equals(event.getInitiatorId(), userId)) {
             throw new ConflictException("Событие добавленно не теущем пользователем");
         }
         Map<Long, Long> confirmed = requestRepository.countRequestsByEventIdsAndStatus(List.of(event.getId()), RequestStatus.CONFIRMED);
@@ -134,7 +134,7 @@ public class EventService {
     public EventFullDto updateEventByUser(Long eventId, Long userId, UpdateEventUserRequest event) {
         Event eventToUpdate = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Событие не найдено id=" + eventId));
-        if (!Objects.equals(eventToUpdate.getInitiator().getId(), userId) ||
+        if (!Objects.equals(eventToUpdate.getInitiatorId(), userId) ||
             eventToUpdate.getState() == EventState.PUBLISHED) {
             throw new ConflictException("Событие добавленно не теущем пользователем или уже было опубликовано");
         }

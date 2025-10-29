@@ -17,4 +17,7 @@ public interface RequestClient {
     @GetMapping("/count-by-event")
     Map<Long, Long> countByEvent(@RequestParam("eventIds") List<Long> eventIds,
                                  @RequestParam("status") String status);
+
+    @GetMapping("/exists")
+    boolean exists(@RequestParam("userId") Long userId, @RequestParam("eventId") Long eventId, @RequestParam("status") String status);
 }

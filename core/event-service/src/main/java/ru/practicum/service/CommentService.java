@@ -5,10 +5,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.comment.*;
+import ru.practicum.dto.request.RequestStatus;
 import ru.practicum.entity.*;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.ForbiddenException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.feign.RequestClient;
 import ru.practicum.feign.UserClient;
 import ru.practicum.mapper.CommentMapper;
 import ru.practicum.repository.CommentRepository;
@@ -28,8 +30,8 @@ public class CommentService {
     private final EventRepository eventRepository;
     private final UserClient userClient;
     private final CommentRepository commentRepository;
-    private final ParticipationRequestRepository requestRepository;
     private final CommentMapper mapper;
+    private final RequestClient requestClient;
 
     @Transactional
     public CommentDto addComment(Long userId, Long eventId, CreateUpdateCommentDto dto) {
@@ -51,8 +53,7 @@ public class CommentService {
 
         comment = commentRepository.save(comment);
 
-        boolean isAuthorParticipant = requestRepository.existsByRequesterIdAndEventIdAndStatus(userId, eventId,
-                RequestStatus.CONFIRMED);
+        boolean isAuthorParticipant = requestClient.exists(userId, eventId, "CONFIRMED");
 
         CommentDto response = mapper.toDto(comment);
         response.setIsAuthorParticipant(isAuthorParticipant);
@@ -96,8 +97,7 @@ public class CommentService {
 
         comment = commentRepository.saveAndFlush(comment);
 
-        boolean isAuthorParticipant = requestRepository.existsByRequesterIdAndEventIdAndStatus(userId, eventId,
-                RequestStatus.CONFIRMED);
+        boolean isAuthorParticipant = requestClient.exists(userId, eventId, "CONFIRMED");
 
         CommentDto response = mapper.toDto(comment);
         response.setIsAuthorParticipant(isAuthorParticipant);

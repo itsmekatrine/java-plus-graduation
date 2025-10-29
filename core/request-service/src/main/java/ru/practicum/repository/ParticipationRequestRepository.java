@@ -5,34 +5,38 @@ import org.springframework.data.jpa.repository.Query;
 import ru.practicum.model.ParticipationRequest;
 import ru.practicum.model.RequestStatus;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public interface ParticipationRequestRepository extends JpaRepository<ParticipationRequest, Long> {
     @Query("""
-            select r.event.id, count(r.id)
-            from ParticipationRequest r
-            where r.event.id in ?1 and r.status = ?2
-            group by r.event.id""")
-    List<Object[]> countRequestsByStatus(List<Long> ids, RequestStatus status);
+        select r.eventId as eventId, count(r.id) as cnt
+        from ParticipationRequest r
+        where r.eventId in ?1 and r.status = ?2
+        group by r.eventId
+    """)
+    List<EventCountRow> countRequestsByStatus(List<Long> eventIds, RequestStatus status);
 
-    long countByEventIdAndStatus(Long eventId, RequestStatus status);
+    default Map<Long, Long> countRequestsByEventIdsAndStatus(List<Long> eventIds, RequestStatus status) {
+        if (eventIds == null || eventIds.isEmpty()) return Collections.emptyMap();
+        return countRequestsByStatus(eventIds, status).stream()
+                .collect(Collectors.toMap(EventCountRow::getEventId, EventCountRow::getCnt));
+    }
+
+    interface EventCountRow {
+        Long getEventId();
+        Long getCnt();
+    }
 
     List<ParticipationRequest> findAllByRequesterId(Long userId);
-
-    default Map<Long, Long> countRequestsByEventIdsAndStatus(List<Long> ids, RequestStatus status) {
-        List<Object[]> result = countRequestsByStatus(ids, status);
-        return result.stream()
-                .collect(Collectors.toMap(
-                        arr -> (Long) arr[0],
-                        arr -> (Long) arr[1]
-                ));
-    }
 
     List<ParticipationRequest> findAllByEventId(Long eventId);
 
     boolean existsByRequesterIdAndEventId(Long requesterId, Long eventId);
+
+    long countByEventIdAndStatus(Long eventId, RequestStatus status);
 
     boolean existsByRequesterIdAndEventIdAndStatus(Long id, Long id1, RequestStatus status);
 }

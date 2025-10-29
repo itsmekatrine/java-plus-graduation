@@ -72,6 +72,12 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/stats-db
       - SPRING_DATASOURCE_USERNAME=sdb
       - SPRING_DATASOURCE_PASSWORD=password
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:9090/actuator/health || exit 1
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
     depends_on:
       discovery-server:
         condition: service_healthy
@@ -93,6 +99,12 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/user-db
       - SPRING_DATASOURCE_USERNAME=udb
       - SPRING_DATASOURCE_PASSWORD=password
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://discovery-server:8761/eureka/apps/USER-SERVICE || exit 1
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
     depends_on:
       discovery-server:
         condition: service_healthy
@@ -103,23 +115,35 @@ services:
       user-db:
         condition: service_healthy
 
-  ewm-service:
+  event-service:
     build:
-      context: core/main-service
+      context: core/event-service
       dockerfile: Dockerfile
-    image: ewm-service
-    container_name: ewm-service
+    image: event-service
+    container_name: event-service
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CLOUD_CONFIG_PROFILE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID=config-server
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/ewm-db
-      - SPRING_DATASOURCE_USERNAME=ewm
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://event-db:5432/event-db
+      - SPRING_DATASOURCE_USERNAME=edb
       - SPRING_DATASOURCE_PASSWORD=password
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://discovery-server:8761/eureka/apps/EVENT-SERVICE || exit 1
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
     depends_on:
-      - ewm-db
-      - stats-server
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      gateway-server:
+        condition: service_healthy
+      event-db:
+        condition: service_healthy
 
   stats-db:
     image: postgres:16.1
@@ -138,17 +162,17 @@ services:
       interval: 5s
       retries: 10
 
-  ewm-db:
+  event-db:
     image: postgres:16.1
-    container_name: ewm-db
+    container_name: event-db
     ports:
       - "6542:5432"
     environment:
-      - POSTGRES_DB=ewm-db
-      - POSTGRES_USER=ewm
+      - POSTGRES_DB=event-db
+      - POSTGRES_USER=edb
       - POSTGRES_PASSWORD=password
     volumes:
-      - ./volumes/postgres/ewm_data:/var/lib/postgresql/data/
+      - ./volumes/postgres/event_data:/var/lib/postgresql/data/
     healthcheck:
       test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
       timeout: 5s

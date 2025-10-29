@@ -8,7 +8,7 @@ spring:
           searchLocations:
             - file:/app/config/core/{application}
             - file:/app/config/infra/{application}
-            - file:/app/config/stats-service/{application}
+            - file:/app/config/stats/{application}
 
 server:
   port: 0

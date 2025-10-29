@@ -12,7 +12,7 @@
     <artifactId>core</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>main-service</module>
+        <module>event-service</module>
         <module>user-service</module>
     </modules>
 

@@ -13,8 +13,8 @@ logging:
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://ewm-db:5432/ewm-db
-    username: ewm
+    url: jdbc:postgresql://localhost:6542/event-db
+    username: edb
     password: password
   jpa:
     hibernate:
@@ -33,9 +33,3 @@ spring:
 logbook:
   format:
     style: http
-
-resilience4j:
-  circuitbreaker:
-    configs:
-      default:
-        registerHealthIndicator: true

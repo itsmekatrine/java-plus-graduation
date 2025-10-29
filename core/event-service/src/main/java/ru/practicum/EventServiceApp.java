@@ -6,8 +6,8 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
 @EnableFeignClients
-public class MainServiceApp {
+public class EventServiceApp {
     public static void main(String[] args) {
-        SpringApplication.run(MainServiceApp.class, args);
+        SpringApplication.run(EventServiceApp.class, args);
     }
 }

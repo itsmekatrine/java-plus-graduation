@@ -59,7 +59,7 @@ public class EventController {
                 request.getRemoteAddr(), request.getRequestURI(), timestamp);
 
         statsClient.postHit(HitDto.builder()
-                .app("ewm-main-service")
+                .app("event-service")
                 .uri(request.getRequestURI())
                 .ip(request.getRemoteAddr())
                 .timestamp(timestamp)
@@ -91,7 +91,7 @@ public class EventController {
         log.info("GET /events/{}: ip={}, uri={}, ts={}", id, request.getRemoteAddr(), request.getRequestURI(), timestamp);
 
         statsClient.postHit(HitDto.builder()
-                .app("ewm-main-service")
+                .app("event-service")
                 .uri(request.getRequestURI())
                 .ip(request.getRemoteAddr())
                 .timestamp(timestamp)

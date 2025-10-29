@@ -11,12 +11,8 @@ import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.event.NewEventDto;
 import ru.practicum.dto.event.UpdateEventUserRequest;
-import ru.practicum.dto.request.EventRequestStatusUpdateRequest;
-import ru.practicum.dto.request.EventRequestStatusUpdateResult;
-import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.parameters.EventUserSearchParam;
 import ru.practicum.service.EventService;
-import ru.practicum.service.ParticipationRequestService;
 
 import java.util.List;
 
@@ -27,7 +23,6 @@ import java.util.List;
 public class PrivateEventController {
 
     private final EventService eventService;
-    private final ParticipationRequestService requestService;
 
     @GetMapping
     public List<EventShortDto> getUsersEvents(@PathVariable @Positive Long userId,
@@ -63,21 +58,5 @@ public class PrivateEventController {
                                           @RequestBody @Valid UpdateEventUserRequest event) {
         log.info("Updating event id={} by user id={}", userId, eventId);
         return eventService.updateEventByUser(eventId, userId, event);
-    }
-
-    @GetMapping("/{eventId}/requests")
-    public List<ParticipationRequestDto> getUsersRequests(@PathVariable @Positive Long userId,
-                                                          @PathVariable @Positive Long eventId) {
-        List<ParticipationRequestDto> requestForEventByUserId = requestService.getRequestForEventByUserId(eventId, userId);
-        log.info("Get requests by userId={} for eventId={}, requests={}", userId, eventId, requestForEventByUserId);
-        return requestForEventByUserId;
-    }
-
-    @PatchMapping("/{eventId}/requests")
-    public EventRequestStatusUpdateResult updateUsersRequests(@PathVariable @Positive Long userId,
-                                                              @PathVariable @Positive Long eventId,
-                                                              @RequestBody EventRequestStatusUpdateRequest updateRequest) {
-        log.info("Updating requests by userId={} for eventId={}", userId, eventId);
-        return requestService.updateRequests(eventId, userId, updateRequest);
     }
 }

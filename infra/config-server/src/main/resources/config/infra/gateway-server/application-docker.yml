@@ -13,6 +13,11 @@ spring:
           predicates:
             - Path=/admin/users/**
 
+        - id: request_service_route
+          uri: lb://request-service
+          predicates:
+            - Path=/users/{userId}/requests/**,/users/{userId}/events/{eventId}/requests/**
+
 management:
   endpoints:
     web:

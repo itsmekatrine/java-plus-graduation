@@ -17,8 +17,6 @@
     </properties>
 
     <modules>
-        <module>stats-dto</module>
         <module>stats-server</module>
-        <module>stats-client</module>
     </modules>
 </project>

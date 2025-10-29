@@ -6,14 +6,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.client.StatsClient;
 import ru.practicum.controller.publicAPI.EventController;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventShortDto;
+import ru.practicum.dto.event.EventState;
 import ru.practicum.dto.event.Location;
 import ru.practicum.dto.user.UserShortDto;
-import ru.practicum.entity.EventState;
+import ru.practicum.feign.StatsClient;
 import ru.practicum.service.CommentService;
 import ru.practicum.service.EventService;
 

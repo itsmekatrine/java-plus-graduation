@@ -110,10 +110,9 @@ services:
     image: ewm-service
     container_name: ewm-service
     environment:
-      - SPRING_APPLICATION_NAME=main-service
       - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_CONFIG_PROFILE=docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
-      - SPRING_CLOUD_CONFIG_DISCOVERY_ENABLED=true
       - SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID=config-server
       - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/ewm-db
       - SPRING_DATASOURCE_USERNAME=ewm

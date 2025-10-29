@@ -52,7 +52,7 @@ public class CommentService {
 
         comment = commentRepository.save(comment);
 
-        boolean isAuthorParticipant = requestRepository.existsByRequester_IdAndEvent_IdAndStatus(userId, eventId,
+        boolean isAuthorParticipant = requestRepository.existsByRequesterIdAndEventIdAndStatus(userId, eventId,
                 RequestStatus.CONFIRMED);
 
         CommentDto response = mapper.toDto(comment);
@@ -97,7 +97,7 @@ public class CommentService {
 
         comment = commentRepository.saveAndFlush(comment);
 
-        boolean isAuthorParticipant = requestRepository.existsByRequester_IdAndEvent_IdAndStatus(userId, eventId,
+        boolean isAuthorParticipant = requestRepository.existsByRequesterIdAndEventIdAndStatus(userId, eventId,
                 RequestStatus.CONFIRMED);
 
         CommentDto response = mapper.toDto(comment);

@@ -13,12 +13,12 @@ import java.util.Optional;
 
 public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecificationExecutor<Event> {
 
-    @EntityGraph(attributePaths = {"initiator", "category"})
+    @EntityGraph(attributePaths = {"category"})
     Page<Event> findByInitiatorId(Long id, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"initiator", "category"})
+    @EntityGraph(attributePaths = {"category"})
     Optional<Event> findByIdAndState(Long id, EventState state);
 
-    @EntityGraph(attributePaths = {"initiator", "category"})
+    @EntityGraph(attributePaths = {"category"})
     Page<Event> findAll(Specification<Event> specification, Pageable pageable);
 }

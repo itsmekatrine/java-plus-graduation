@@ -6,7 +6,7 @@ spring:
         - id: event-service_route
           uri: lb://event-service
           predicates:
-            - Path=/**
+            - Path=/admin/events/**,/users/{userId}/events/**,/events/**,/admin/categories/**,/categories/**,/admin/compilations/**,/compilations/**
 
         - id: user_service_route
           uri: lb://user-service

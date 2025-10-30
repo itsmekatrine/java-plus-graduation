@@ -15,7 +15,6 @@ import ru.practicum.exception.ForbiddenException;
 import ru.practicum.exception.NotFoundException;
 
 import java.time.LocalDateTime;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
@@ -45,26 +44,7 @@ public class ErrorHandler {
                 .build());
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException e) {
-        String message = e.getBindingResult().getFieldErrors().stream()
-                .map(error -> String.format("Field: %s. Error: %s. Value: %s",
-                        error.getField(),
-                        error.getDefaultMessage(),
-                        error.getRejectedValue()))
-                .collect(Collectors.joining("; "));
-
-        log.info("400 {}", message);
-        return ResponseEntity.badRequest()
-                .body(ApiError.builder()
-                        .status(HttpStatus.BAD_REQUEST.name())
-                        .reason("Incorrectly made request.")
-                        .message(message)
-                        .timestamp(LocalDateTime.now())
-                        .build());
-    }
-
-    @ExceptionHandler({MissingServletRequestParameterException.class, BadRequestException.class})
+    @ExceptionHandler({MissingServletRequestParameterException.class, MethodArgumentNotValidException.class, BadRequestException.class})
     public ResponseEntity<ApiError> handleBadRequestException(Exception e) {
         log.info("400 {}", e.getMessage());
         String badRequestReason = "Incorrectly made request.";
@@ -85,18 +65,6 @@ public class ErrorHandler {
                 .body(ApiError.builder()
                         .status(HttpStatus.FORBIDDEN.name())
                         .reason(forbiddenReason)
-                        .message(e.getMessage())
-                        .timestamp(LocalDateTime.now())
-                        .build());
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleInternal(Exception e) {
-        log.error("500 Unexpected error: {}", e.getMessage(), e);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiError.builder()
-                        .status(HttpStatus.INTERNAL_SERVER_ERROR.name())
-                        .reason("Unexpected error occurred.")
                         .message(e.getMessage())
                         .timestamp(LocalDateTime.now())
                         .build());

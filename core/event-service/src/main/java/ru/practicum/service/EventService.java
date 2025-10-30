@@ -51,8 +51,9 @@ public class EventService {
         return events.stream()
                 .map(event -> {
                     EventShortDto dto = eventMapper.toShortDto(event);
-                    dto.setViews(views.getOrDefault(event.getId(), 0L));
-                    dto.setConfirmedRequests(confirmedRequests.getOrDefault(event.getId(), 0L));
+                    final Long eventId = event.getId();
+                    dto.setViews(views.getOrDefault(eventId, 0L));
+                    dto.setConfirmedRequests(confirmedRequests.getOrDefault(eventId, 0L));
                     return dto;
                 })
                 .toList();
@@ -72,42 +73,50 @@ public class EventService {
 
         Page<Event> events = eventRepository.findAll(eventPublicSearchParamSpec(param), param.getPageable());
 
-        List<Long> eventIds = events.stream()
-                .map(Event::getId)
-                .toList();
+        List<Long> eventIds = events.stream().map(Event::getId).toList();
         Map<Long, Long> views = getViews(eventIds);
         Map<Long, Long> confirmed = getConfirmedMap(eventIds);
 
-        Stream<EventShortDto> eventShortDtoStream = events.stream()
+        boolean onlyAvailable = Boolean.TRUE.equals(param.getOnlyAvailable());
+        boolean sortByViews = SortSearchParam.VIEWS.equals(param.getSort());
+
+        Stream<EventShortDto> stream = events.stream()
                 .map(event -> {
-                    if (param.getOnlyAvailable() && confirmed.get(event.getId()) >= event.getParticipantLimit()) {
+                    Long eventId = event.getId();
+                    long confirmedCnt = confirmed.getOrDefault(eventId, 0L);
+                    Integer limit = event.getParticipantLimit();
+
+                    if (onlyAvailable && limit != null && limit > 0 && confirmedCnt >= limit) {
                         return null;
                     }
+
                     EventShortDto dto = eventMapper.toShortDto(event);
-                    dto.setConfirmedRequests(confirmed.get(dto.getId()) == null ? 0 : confirmed.get(dto.getId()));
-                    dto.setViews(views.get(event.getId()) == null ? 0 : views.get(dto.getId()));
+                    dto.setConfirmedRequests(confirmedCnt);
+                    dto.setViews(views.getOrDefault(eventId, 0L));
                     return dto;
                 })
                 .filter(Objects::nonNull);
-        if (param.getSort() == SortSearchParam.VIEWS) {
-            return eventShortDtoStream
-                    .sorted(Comparator.comparingLong(EventShortDto::getViews))
-                    .toList();
-        } else {
-            return eventShortDtoStream
+
+        if (sortByViews) {
+            return stream.sorted(Comparator.comparingLong(EventShortDto::getViews).reversed())
                     .toList();
         }
+
+        return stream.toList();
     }
 
     public EventFullDto getEventById(Long id) {
         Event event = eventRepository.findByIdAndState(id, EventState.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Событие не найдено или не опубликовано"));
-        Map<Long, Long> confirmed = getConfirmedMap(List.of(event.getId()));
-        Map<Long, Long> views = getViews(List.of(event.getId()));
+
+        Long eventId = event.getId();
+
+        Map<Long, Long> confirmed = getConfirmedMap(List.of(eventId));
+        Map<Long, Long> views = getViews(List.of(eventId));
 
         EventFullDto dto = eventMapper.toFullDto(event);
-        dto.setConfirmedRequests(confirmed.get(dto.getId()));
-        dto.setViews(views.get(dto.getId()));
+        dto.setConfirmedRequests(confirmed.getOrDefault(eventId, 0L));
+        dto.setViews(views.getOrDefault(eventId, 0L));
         return dto;
     }
 
@@ -115,14 +124,16 @@ public class EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Событие не найдено"));
         if (!Objects.equals(event.getInitiatorId(), userId)) {
-            throw new ConflictException("Событие добавленно не текущим пользователем");
+            throw new ConflictException("Событие добавлено не текущим пользователем");
         }
-        Map<Long, Long> confirmed = getConfirmedMap(List.of(event.getId()));
-        Map<Long, Long> views = getViews(List.of(event.getId()));
+
+        Long id = event.getId();
+        Map<Long, Long> confirmed = getConfirmedMap(List.of(id));
+        Map<Long, Long> views = getViews(List.of(id));
 
         EventFullDto dto = eventMapper.toFullDto(event);
-        dto.setConfirmedRequests(confirmed.get(dto.getId()));
-        dto.setViews(views.get(dto.getId()));
+        dto.setConfirmedRequests(confirmed.getOrDefault(id, 0L));
+        dto.setViews(views.getOrDefault(id, 0L));
         return dto;
     }
 
@@ -131,23 +142,26 @@ public class EventService {
         Event eventToUpdate = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Событие не найдено id=" + eventId));
         if (!Objects.equals(eventToUpdate.getInitiatorId(), userId) ||
-            eventToUpdate.getState() == EventState.PUBLISHED) {
-            throw new ConflictException("Событие добавленно не теущем пользователем или уже было опубликовано");
+                eventToUpdate.getState() == EventState.PUBLISHED) {
+            throw new ConflictException("Событие добавлено не текущим пользователем или уже было опубликовано");
         }
+
         updateNouNullFields(eventToUpdate, event);
         if (event.getStateAction() == UserEventAction.CANCEL_REVIEW) {
             eventToUpdate.setState(EventState.CANCELED);
         } else if (event.getStateAction() == UserEventAction.SEND_TO_REVIEW) {
             eventToUpdate.setState(EventState.PENDING);
         }
-        Event updated = eventRepository.save(eventToUpdate);
 
-        Map<Long, Long> confirmed = getConfirmedMap(List.of(eventId));
-        Map<Long, Long> views = getViews(List.of(eventId));
+        Event updated = eventRepository.save(eventToUpdate);
+        Long id = updated.getId();
+
+        Map<Long, Long> confirmed = getConfirmedMap(List.of(id));
+        Map<Long, Long> views = getViews(List.of(id));
 
         EventFullDto result = eventMapper.toFullDto(updated);
-        result.setConfirmedRequests(confirmed.get(eventId));
-        result.setViews(views.get(eventId));
+        result.setConfirmedRequests(confirmed.getOrDefault(id, 0L));
+        result.setViews(views.getOrDefault(id, 0L));
         return result;
     }
 
@@ -165,9 +179,10 @@ public class EventService {
         return searched.stream()
                 .limit(params.getSize())
                 .map(event -> {
+                    Long id = event.getId();
                     EventFullDto dto = eventMapper.toFullDto(event);
-                    dto.setConfirmedRequests(confirmed.get(dto.getId()) == null ? 0 : confirmed.get(dto.getId()));
-                    dto.setViews(views.get(event.getId()) == null ? 0 : views.get(event.getId()));
+                    dto.setConfirmedRequests(confirmed.getOrDefault(id, 0L));
+                    dto.setViews(views.getOrDefault(id, 0L));
                     return dto;
                 })
                 .collect(toList());
@@ -177,27 +192,36 @@ public class EventService {
     public EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequest updateRequest) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event id=" + eventId + "not found"));
-        if (event.getState() != EventState.PENDING && updateRequest.getStateAction() == AdminEventAction.PUBLISH_EVENT) {
-            throw new ConflictException("Cannot publish the event because it's not in the right state: " + event.getState());
+
+        if (updateRequest.getStateAction() == AdminEventAction.PUBLISH_EVENT) {
+            if (event.getState() != EventState.PENDING) {
+                throw new ConflictException("Cannot publish the event because it's not in the right state: " + event.getState());
+            }
+            if (event.getEventDate().minusHours(1).isBefore(LocalDateTime.now())) {
+                throw new ConflictException("To late to change event");
+            }
+            updateNouNullFields(event, updateRequest);
+            event.setState(EventState.PUBLISHED);
+            event.setPublishedOn(LocalDateTime.now());
+        } else if (updateRequest.getStateAction() == AdminEventAction.REJECT_EVENT) {
+            if (event.getState() == EventState.PUBLISHED) {
+                throw new ConflictException("Cannot reject the event because it's not in the right state: PUBLISHED");
+            }
+            updateNouNullFields(event, updateRequest);
+            event.setState(EventState.CANCELED);
+            event.setPublishedOn(null);
+        } else {
+            updateNouNullFields(event, updateRequest);
         }
-        if (event.getState() == EventState.PUBLISHED && updateRequest.getStateAction() == AdminEventAction.REJECT_EVENT) {
-            throw new ConflictException("Cannot reject the event because it's not in the right state: PUBLISHED");
-        }
-        if (event.getEventDate().minusHours(1).isBefore(LocalDateTime.now())) {
-            throw new ConflictException("To late to change event");
-        }
-        updateNouNullFields(event, updateRequest);
-        event.setState(updateRequest.getStateAction() == AdminEventAction.PUBLISH_EVENT ? EventState.PUBLISHED : EventState.CANCELED);
+
         Event updated = eventRepository.save(event);
 
         EventFullDto dto = eventMapper.toFullDto(updated);
-
-        Map<Long, Long> views = getViews(List.of(eventId));
-        Map<Long, Long> confirmed = getConfirmedMap(List.of(eventId));
-
-        dto.setViews(views.get(eventId));
-        dto.setConfirmedRequests(confirmed.get(eventId));
-
+        Long id = updated.getId();
+        Map<Long, Long> views = getViews(List.of(id));
+        Map<Long, Long> confirmed = getConfirmedMap(List.of(id));
+        dto.setViews(views.getOrDefault(id, 0L));
+        dto.setConfirmedRequests(confirmed.getOrDefault(id, 0L));
         return dto;
     }
 
@@ -233,27 +257,22 @@ public class EventService {
      * Getting stats from stats client
      */
     private Map<Long, Long> getViews(List<Long> eventIds) {
-        if (eventIds == null || eventIds.isEmpty()) {
-            return Collections.emptyMap();
-        }
+        if (eventIds == null || eventIds.isEmpty()) return Collections.emptyMap();
+
         LocalDateTime start = LocalDateTime.of(2000, 1, 1, 0, 0, 0);
         LocalDateTime end   = LocalDateTime.of(2100, 1, 1, 0, 0, 0);
 
-        List<String> uris = eventIds.stream()
-                .map(id -> "/events/" + id)
-                .toList();
-
+        List<String> uris = eventIds.stream().map(id -> "/events/" + id).toList();
         List<StatsDto> stats = statsClient.getStats(start, end, uris, true);
+        if (stats == null || stats.isEmpty()) return Collections.emptyMap();
 
-        Map<Long, Long> result = stats.stream()
-                .filter(s -> !"/events".equals(s.getUri()))
+        return stats.stream()
+                .filter(s -> s.getUri() != null && s.getUri().startsWith("/events/"))
                 .collect(Collectors.toMap(
-                        s -> Long.parseLong(s.getUri().replace("/events/", "")),
+                        s -> Long.parseLong(s.getUri().substring("/events/".length())),
                         StatsDto::getHits,
                         Long::sum
                 ));
-
-        return result;
     }
 
     private Map<Long, Long> getConfirmedMap(List<Long> eventIds) {
@@ -261,5 +280,4 @@ public class EventService {
         Map<Long, Long> map = requestClient.countByEvent(eventIds, "CONFIRMED");
         return map != null ? map : Collections.emptyMap();
     }
-
 }

@@ -18,8 +18,7 @@ public class EventSpecifications {
             if (userIds == null || userIds.isEmpty()) {
                 return criteriaBuilder.conjunction(); // Всегда истина
             }
-            Path<Long> initiatorIdPath = root.get("initiator").get("id");
-            return initiatorIdPath.in(userIds);
+            return root.get("initiatorId").in(userIds);
         };
     }
 

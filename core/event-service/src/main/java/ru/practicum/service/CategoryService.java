@@ -11,6 +11,7 @@ import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.mapper.CategoryMapper;
 import ru.practicum.repository.CategoryRepository;
+import ru.practicum.repository.EventRepository;
 
 import java.util.List;
 
@@ -21,6 +22,7 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final CategoryMapper mapper;
+    private final EventRepository eventRepository;
 
     @Transactional
     public CategoryDto save(NewCategoryDto dto) {
@@ -35,6 +37,9 @@ public class CategoryService {
     public void deleteCategory(Long catId) {
         Category category = categoryRepository.findById(catId)
                 .orElseThrow(() -> new NotFoundException("Category with id=" + catId + " was not found"));
+        if (eventRepository.existsByCategoryId(catId)) {
+            throw new ConflictException("Category is used by events");
+        }
         categoryRepository.delete(category);
         categoryRepository.flush();
     }

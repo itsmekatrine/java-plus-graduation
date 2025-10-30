@@ -2,6 +2,7 @@ package ru.practicum.controller.publicAPI;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.parameters.PageableSearchParam;
@@ -13,6 +14,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/categories")
 @RequiredArgsConstructor
+@Validated
 public class CategoryController {
 
     private final CategoryService categoryService;
@@ -25,10 +27,8 @@ public class CategoryController {
                 .from(from)
                 .build();
 
-        log.info("GET /categories called");
-        List<CategoryDto> categories = categoryService.getAllCategories(param.getPageable());
-        log.info("Returned {} categories", categories.size());
-        return categories;
+        log.info("GET /categories from={}, size={}", from, size);
+        return categoryService.getAllCategories(param.getPageable());
     }
 
     @GetMapping("/{catId}")

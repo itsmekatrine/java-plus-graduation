@@ -1,23 +1,48 @@
 package ru.practicum.feign;
 
+import jakarta.validation.Valid;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+import ru.practicum.dto.request.EventRequestStatusUpdateRequest;
+import ru.practicum.dto.request.EventRequestStatusUpdateResult;
 import ru.practicum.dto.request.ParticipationRequestDto;
 
 import java.util.List;
 import java.util.Map;
 
-@FeignClient(name = "request-service", path = "/admin/requests")
+@FeignClient(name = "request-service")
 public interface RequestClient {
 
-    @GetMapping("/confirmed")
+    // ADMIN
+    @GetMapping("/admin/requests/confirmed")
     Map<Long, List<ParticipationRequestDto>> getConfirmedRequests(@RequestParam List<Long> eventIds);
 
-    @GetMapping("/count-by-event")
+    @GetMapping("/admin/requests/count-by-event")
     Map<Long, Long> countByEvent(@RequestParam("eventIds") List<Long> eventIds,
                                  @RequestParam("status") String status);
 
-    @GetMapping("/exists")
+    @GetMapping("/admin/requests/exists")
     boolean exists(@RequestParam("userId") Long userId, @RequestParam("eventId") Long eventId, @RequestParam("status") String status);
+
+    // OWNER
+    @GetMapping("/users/{userId}/events/{eventId}/requests")
+    List<ParticipationRequestDto> getEventRequests(@PathVariable Long userId,
+                                                   @PathVariable Long eventId);
+
+    @PatchMapping("/users/{userId}/events/{eventId}/requests")
+    EventRequestStatusUpdateResult updateEventRequests(@PathVariable Long userId,
+                                                       @PathVariable Long eventId,
+                                                       @RequestBody @Valid EventRequestStatusUpdateRequest body);
+
+    // REQUESTER
+    @GetMapping("/users/{userId}/requests")
+    List<ParticipationRequestDto> getMyRequests(@PathVariable Long userId);
+
+    @PostMapping("/users/{userId}/requests")
+    ParticipationRequestDto create(@PathVariable Long userId,
+                                   @RequestParam Long eventId);
+
+    @PatchMapping("/users/{userId}/requests/{requestId}/cancel")
+    ParticipationRequestDto cancel(@PathVariable Long userId,
+                                   @PathVariable Long requestId);
 }

@@ -6,11 +6,16 @@ import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.event.NewEventDto;
 import ru.practicum.dto.event.UpdateEventUserRequest;
+import ru.practicum.dto.request.EventRequestStatusUpdateRequest;
+import ru.practicum.dto.request.EventRequestStatusUpdateResult;
+import ru.practicum.dto.request.ParticipationRequestDto;
+import ru.practicum.feign.RequestClient;
 import ru.practicum.parameters.EventUserSearchParam;
 import ru.practicum.service.EventService;
 
@@ -20,9 +25,11 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/users/{userId}/events")
+@Validated
 public class PrivateEventController {
 
     private final EventService eventService;
+    private final RequestClient requestClient;
 
     @GetMapping
     public List<EventShortDto> getUsersEvents(@PathVariable @Positive Long userId,
@@ -58,5 +65,20 @@ public class PrivateEventController {
                                           @RequestBody @Valid UpdateEventUserRequest event) {
         log.info("Updating event id={} by user id={}", userId, eventId);
         return eventService.updateEventByUser(eventId, userId, event);
+    }
+
+    @GetMapping("/{eventId}/requests")
+    public List<ParticipationRequestDto> getEventRequests(@PathVariable @Positive Long userId,
+                                                          @PathVariable @Positive Long eventId) {
+        log.info("Get requests for eventId={} by userId={}", eventId, userId);
+        return requestClient.getEventRequests(userId, eventId);
+    }
+
+    @PatchMapping("/{eventId}/requests")
+    public EventRequestStatusUpdateResult updateEventRequests(@PathVariable @Positive Long userId,
+                                                              @PathVariable @Positive Long eventId,
+                                                              @RequestBody @Valid EventRequestStatusUpdateRequest body) {
+        log.info("Update requests for eventId={} by userId={}, body={}", eventId, userId, body);
+        return requestClient.updateEventRequests(userId, eventId, body);
     }
 }

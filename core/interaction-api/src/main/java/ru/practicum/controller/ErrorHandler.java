@@ -6,8 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.practicum.dto.ApiError;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictException;
@@ -17,7 +17,7 @@ import ru.practicum.exception.NotFoundException;
 import java.time.LocalDateTime;
 
 @Slf4j
-@ControllerAdvice
+@RestControllerAdvice
 public class ErrorHandler {
 
     @ExceptionHandler
@@ -25,7 +25,7 @@ public class ErrorHandler {
         log.info("404 {}", e.getMessage());
         String notFoundReason = "The required object was not found.";
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiError.builder()
-                .status(HttpStatus.NOT_FOUND.toString())
+                .status(HttpStatus.NOT_FOUND.name())
                 .reason(notFoundReason)
                 .message(e.getMessage())
                 .timestamp(LocalDateTime.now())
@@ -37,7 +37,7 @@ public class ErrorHandler {
         log.info("409 {}", e.getMessage());
         String conflictReason = "Integrity constraint has been violated.";
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiError.builder()
-                .status(HttpStatus.CONFLICT.toString())
+                .status(HttpStatus.CONFLICT.name())
                 .reason(conflictReason)
                 .message(e.getMessage())
                 .timestamp(LocalDateTime.now())
@@ -50,7 +50,7 @@ public class ErrorHandler {
         String badRequestReason = "Incorrectly made request.";
         return ResponseEntity.badRequest()
                 .body(ApiError.builder()
-                        .status(HttpStatus.BAD_REQUEST.toString())
+                        .status(HttpStatus.BAD_REQUEST.name())
                         .reason(badRequestReason)
                         .message(e.getMessage())
                         .timestamp(LocalDateTime.now())
@@ -63,7 +63,7 @@ public class ErrorHandler {
         String forbiddenReason = "Access denied.";
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ApiError.builder()
-                        .status(HttpStatus.FORBIDDEN.toString())
+                        .status(HttpStatus.FORBIDDEN.name())
                         .reason(forbiddenReason)
                         .message(e.getMessage())
                         .timestamp(LocalDateTime.now())

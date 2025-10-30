@@ -13,15 +13,15 @@ spring:
           predicates:
             - Path=/users/{userId}/requests/**,/users/{userId}/events/{eventId}/requests/**
 
-        - id: comment_service_route
-          uri: lb://comment-service
-          predicates:
-            - Path=/admin/comments/{commentId}/**,/users/{userId}/comments/**,/events/{eventId}/comments,/comments/{commentId}
-
         - id: event-service_route
           uri: lb://event-service
           predicates:
             - Path=/admin/events/**,/users/{userId}/events/**,/events/**,/admin/categories/**,/categories/**,/admin/compilations/**,/compilations/**
+
+        - id: comment_service_route
+          uri: lb://comment-service
+          predicates:
+            - Path=/admin/comments/{commentId}/**,/users/{userId}/comments/**,/events/{eventId}/comments,/comments/{commentId}
 
 management:
   endpoints:

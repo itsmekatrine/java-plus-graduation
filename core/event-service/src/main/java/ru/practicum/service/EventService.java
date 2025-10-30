@@ -191,33 +191,38 @@ public class EventService {
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequest updateRequest) {
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Event id=" + eventId + "not found"));
+                .orElseThrow(() -> new NotFoundException("Event id=" + eventId + " not found"));
 
-        if (updateRequest.getStateAction() == AdminEventAction.PUBLISH_EVENT) {
+        AdminEventAction action = updateRequest.getStateAction();
+
+        updateNouNullFields(event, updateRequest);
+
+        if (action == AdminEventAction.PUBLISH_EVENT) {
             if (event.getState() != EventState.PENDING) {
                 throw new ConflictException("Cannot publish the event because it's not in the right state: " + event.getState());
             }
-            if (event.getEventDate().minusHours(1).isBefore(LocalDateTime.now())) {
-                throw new ConflictException("To late to change event");
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime start = event.getEventDate();
+            if (start == null || !start.isAfter(now.plusHours(1))) {
+                throw new ConflictException("Event date must be at least 1 hour after publish time");
             }
-            updateNouNullFields(event, updateRequest);
+
             event.setState(EventState.PUBLISHED);
-            event.setPublishedOn(LocalDateTime.now());
-        } else if (updateRequest.getStateAction() == AdminEventAction.REJECT_EVENT) {
+            event.setPublishedOn(now);
+
+        } else if (action == AdminEventAction.REJECT_EVENT) {
             if (event.getState() == EventState.PUBLISHED) {
-                throw new ConflictException("Cannot reject the event because it's not in the right state: PUBLISHED");
+                throw new ConflictException("Cannot reject the event because it's already PUBLISHED");
             }
-            updateNouNullFields(event, updateRequest);
+
             event.setState(EventState.CANCELED);
             event.setPublishedOn(null);
-        } else {
-            updateNouNullFields(event, updateRequest);
         }
 
-        Event updated = eventRepository.save(event);
+        Event saved = eventRepository.save(event);
 
-        EventFullDto dto = eventMapper.toFullDto(updated);
-        Long id = updated.getId();
+        EventFullDto dto = eventMapper.toFullDto(saved);
+        Long id = saved.getId();
         Map<Long, Long> views = getViews(List.of(id));
         Map<Long, Long> confirmed = getConfirmedMap(List.of(id));
         dto.setViews(views.getOrDefault(id, 0L));

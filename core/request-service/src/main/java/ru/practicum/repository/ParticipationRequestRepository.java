@@ -12,9 +12,9 @@ import java.util.List;
 public interface ParticipationRequestRepository extends JpaRepository<ParticipationRequest, Long> {
     @Query("""
         select r.eventId as eventId, count(r.id) as cnt
-          from ParticipationRequest r
-         where r.eventId in :eventIds and r.status = :status
-      group by r.eventId
+        from ParticipationRequest r
+        where r.eventId in :eventIds and r.status = :status
+        group by r.eventId
     """)
     List<EventCountRow> countByEventIdsAndStatus(@Param("eventIds") List<Long> eventIds,
                                                  @Param("status") RequestStatus status);
@@ -23,6 +23,12 @@ public interface ParticipationRequestRepository extends JpaRepository<Participat
         Long getEventId();
         Long getCnt();
     }
+
+    @Query("""
+        select count(r) from ParticipationRequest r
+        where r.status = 'CONFIRMED' and r.eventId = :eventId
+    """)
+    long countConfirmedByEventId(@Param("eventId") Long eventId);
 
     List<ParticipationRequest> findByEventIdInAndStatus(Collection<Long> eventIds, RequestStatus status);
 

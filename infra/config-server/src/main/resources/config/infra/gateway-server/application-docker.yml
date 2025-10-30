@@ -4,8 +4,8 @@ spring:
       discovery.locator.enabled: true
       routes:
         - id: event-service_route
-        - uri: lb://event-service
-        - predicates:
+          uri: lb://event-service
+          predicates:
             - Path=/**
 
         - id: user_service_route
@@ -17,6 +17,11 @@ spring:
           uri: lb://request-service
           predicates:
             - Path=/users/{userId}/requests/**,/users/{userId}/events/{eventId}/requests/**
+
+        - id: comment_service_route
+          uri: lb://comment-service
+          predicates:
+            - Path=/admin/comments/{commentId}/**,/users/{userId}/comments/**,/events/{eventId}/comments,/comments/{commentId}
 
 management:
   endpoints:

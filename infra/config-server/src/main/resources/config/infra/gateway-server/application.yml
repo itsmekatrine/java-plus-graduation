@@ -18,6 +18,11 @@ spring:
           predicates:
             - Path=/users/{userId}/requests/**,/users/{userId}/events/{eventId}/requests/**
 
+        - id: comment_service_route
+          uri: lb://comment-service
+          predicates:
+            - Path=/admin/comments/{commentId}/**,/users/{userId}/comments/**,/events/{eventId}/comments,/comments/{commentId}
+
 management:
   endpoints:
     web:

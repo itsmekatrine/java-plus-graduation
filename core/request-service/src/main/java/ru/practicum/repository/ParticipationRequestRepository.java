@@ -2,33 +2,31 @@ package ru.practicum.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import ru.practicum.dto.request.RequestStatus;
 import ru.practicum.model.ParticipationRequest;
-import ru.practicum.model.RequestStatus;
 
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public interface ParticipationRequestRepository extends JpaRepository<ParticipationRequest, Long> {
     @Query("""
         select r.eventId as eventId, count(r.id) as cnt
-        from ParticipationRequest r
-        where r.eventId in ?1 and r.status = ?2
-        group by r.eventId
+          from ParticipationRequest r
+         where r.eventId in :eventIds and r.status = :status
+      group by r.eventId
     """)
-    List<EventCountRow> countRequestsByStatus(List<Long> eventIds, RequestStatus status);
-
-    default Map<Long, Long> countRequestsByEventIdsAndStatus(List<Long> eventIds, RequestStatus status) {
-        if (eventIds == null || eventIds.isEmpty()) return Collections.emptyMap();
-        return countRequestsByStatus(eventIds, status).stream()
-                .collect(Collectors.toMap(EventCountRow::getEventId, EventCountRow::getCnt));
-    }
+    List<EventCountRow> countByEventIdsAndStatus(@Param("eventIds") List<Long> eventIds,
+                                                 @Param("status") RequestStatus status);
 
     interface EventCountRow {
         Long getEventId();
         Long getCnt();
     }
+
+    List<ParticipationRequest> findByEventIdInAndStatus(Collection<Long> eventIds, RequestStatus status);
+
+    boolean existsByRequesterIdAndEventIdAndStatus(Long requesterId, Long eventId, RequestStatus status);
 
     List<ParticipationRequest> findAllByRequesterId(Long userId);
 
@@ -37,6 +35,4 @@ public interface ParticipationRequestRepository extends JpaRepository<Participat
     boolean existsByRequesterIdAndEventId(Long requesterId, Long eventId);
 
     long countByEventIdAndStatus(Long eventId, RequestStatus status);
-
-    boolean existsByRequesterIdAndEventIdAndStatus(Long id, Long id1, RequestStatus status);
 }

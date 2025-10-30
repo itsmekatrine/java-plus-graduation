@@ -66,6 +66,19 @@ public class ParticipationRequestService {
             throw new ConflictException("Event must be published to request participation");
         }
 
+        Long initId = (event.getInitiator() != null) ? event.getInitiator().getId() : null;
+        if (Objects.equals(initId, userId)) {
+            throw new ConflictException("Initiator cannot request participation in their own event");
+        }
+
+        if (initId == null) {
+            try {
+                eventClient.getByUserIdAndEventId(userId, eventId); // 200 только для инициатора
+                throw new ConflictException("Initiator cannot request participation in their own event");
+            } catch (feign.FeignException.NotFound ignored) {
+            }
+        }
+
         boolean existsActive =
                 requestRepository.existsByRequesterIdAndEventIdAndStatus(userId, eventId, RequestStatus.PENDING)
                         || requestRepository.existsByRequesterIdAndEventIdAndStatus(userId, eventId, RequestStatus.CONFIRMED);
@@ -163,6 +176,9 @@ public class ParticipationRequestService {
 
         if (!Objects.equals(r.getRequesterId(), userId)) {
             throw new ConflictException("User is not the requester");
+        }
+        if (r.getStatus() == RequestStatus.CONFIRMED) {
+            throw new ConflictException("Cannot cancel a confirmed request");
         }
         r.setStatus(RequestStatus.CANCELED);
         return requestMapper.toDto(requestRepository.save(r));

@@ -86,15 +86,35 @@ public class ParticipationRequestService {
     }
 
     @Transactional
-    public EventRequestStatusUpdateResult updateRequest(Long eventId, Long userId,
+    public EventRequestStatusUpdateResult updateRequest(Long userId, Long eventId,
                                                          EventRequestStatusUpdateRequest updateRequest) {
         EventFullDto event = eventClient.getByUserIdAndEventId(userId, eventId);
         Long initiatorId = event.getInitiator() != null ? event.getInitiator().getId() : null;
         if (!Objects.equals(initiatorId, userId)) {
             throw new ConflictException("Can't update requests for event id=" + eventId + " by user id=" + userId);
         }
+        if (updateRequest.getRequestIds() == null || updateRequest.getRequestIds().isEmpty()) {
+            throw new ConflictException("No requests to update");
+        }
+
         List<ParticipationRequest> requests = requestRepository.findAllById(updateRequest.getRequestIds());
-        updateRequests(requests, toModelStatus(updateRequest.getStatus()), event);
+
+        if (requests.isEmpty()) {
+            throw new ConflictException("Requests not found");
+        }
+
+        boolean wrongEvent = requests.stream().anyMatch(r -> !Objects.equals(r.getEventId(), eventId));
+        if (wrongEvent) {
+            throw new ConflictException("Some requests do not belong to event " + eventId);
+        }
+
+        boolean notPending = requests.stream().anyMatch(r -> r.getStatus() != RequestStatus.PENDING);
+        if (notPending) {
+            throw new ConflictException("Can't change status when request is not PENDING");
+        }
+
+        RequestStatus target = toModelStatus(updateRequest.getStatus());
+        applyStatusChangeWithLimitCheck(requests, target, event);
 
         List<ParticipationRequest> saved = requestRepository.saveAll(requests);
 
@@ -152,5 +172,31 @@ public class ParticipationRequestService {
 
     private static RequestStatus toModelStatus(ru.practicum.dto.request.RequestStatus s) {
         return RequestStatus.valueOf(s.name());
+    }
+
+    private void applyStatusChangeWithLimitCheck(List<ParticipationRequest> requests,
+                                                 RequestStatus target,
+                                                 EventFullDto event) {
+        if (target == RequestStatus.REJECTED) {
+            requests.forEach(r -> r.setStatus(RequestStatus.REJECTED));
+            return;
+        }
+
+        boolean moderation = Boolean.TRUE.equals(event.getRequestModeration());
+        Integer limit = event.getParticipantLimit();
+        boolean unlimited = (limit == null || limit == 0);
+
+        if (!moderation && unlimited) {
+            requests.forEach(r -> r.setStatus(RequestStatus.CONFIRMED));
+            return;
+        }
+
+        long confirmedNow = requestRepository.countByEventIdAndStatus(event.getId(), RequestStatus.CONFIRMED);
+
+        if (!unlimited && confirmedNow + requests.size() > limit) {
+            throw new ConflictException("Requests out of limit");
+        }
+
+        requests.forEach(r -> r.setStatus(RequestStatus.CONFIRMED));
     }
 }

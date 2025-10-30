@@ -1,5 +1,6 @@
 package ru.practicum.controller;
 
+import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -68,5 +69,10 @@ public class ErrorHandler {
                         .message(e.getMessage())
                         .timestamp(LocalDateTime.now())
                         .build());
+    }
+
+    @ExceptionHandler(feign.FeignException.class)
+    public ResponseEntity<String> handleFeign(FeignException ex) {
+        return ResponseEntity.status(ex.status()).body(ex.contentUTF8());
     }
 }

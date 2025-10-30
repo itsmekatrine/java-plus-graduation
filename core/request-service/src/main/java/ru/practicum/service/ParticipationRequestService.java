@@ -8,6 +8,7 @@ import ru.practicum.dto.event.EventState;
 import ru.practicum.dto.request.EventRequestStatusUpdateRequest;
 import ru.practicum.dto.request.EventRequestStatusUpdateResult;
 import ru.practicum.dto.request.RequestStatus;
+import ru.practicum.dto.user.UserDto;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
@@ -54,20 +55,24 @@ public class ParticipationRequestService {
 
     @Transactional
     public ParticipationRequestDto createRequest(Long userId, Long eventId) {
-        userClient.getUserById(userId);
+        UserDto user = userClient.getUserById(userId);
+        if (user == null) {
+            throw new NotFoundException("User with id=" + userId + " was not found");
+        }
         EventFullDto event;
         try {
             event = eventClient.findEventById(eventId);
-            if (event == null) {
-                throw new NotFoundException("Event with id=" + eventId + " was not found");
-            }
         } catch (feign.FeignException.NotFound ex) {
-            throw new NotFoundException("Event with id=" + eventId + " was not found");
+            throw new ConflictException("Event must be published to request participation");
         }
 
-        if (requestRepository.existsByRequesterIdAndEventId(userId, eventId)) {
+        boolean existsActive =
+                requestRepository.existsByRequesterIdAndEventIdAndStatus(userId, eventId, RequestStatus.PENDING)
+                        || requestRepository.existsByRequesterIdAndEventIdAndStatus(userId, eventId, RequestStatus.CONFIRMED);
+        if (existsActive) {
             throw new ConflictException("Participation request already exists");
         }
+
         Long initiatorId = event.getInitiator() != null ? event.getInitiator().getId() : null;
         if (Objects.equals(initiatorId, userId)) {
             throw new ConflictException("Initiator cannot request participation in their own event");
@@ -85,7 +90,6 @@ public class ParticipationRequestService {
         ParticipationRequest result = new ParticipationRequest();
         result.setRequesterId(userId);
         result.setEventId(eventId);
-
         boolean requiresModeration = Boolean.TRUE.equals(event.getRequestModeration());
         result.setStatus((limit == 0 || !requiresModeration) ? RequestStatus.CONFIRMED : RequestStatus.PENDING);
         result.setCreated(LocalDateTime.now());

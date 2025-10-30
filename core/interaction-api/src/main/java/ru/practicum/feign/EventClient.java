@@ -8,15 +8,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import ru.practicum.dto.comment.PreModerationRequest;
 import ru.practicum.dto.event.EventFullDto;
 
-@FeignClient(name = "event-service", path = "/admin/events")
+@FeignClient(name = "event-service")
 public interface EventClient {
 
-    @GetMapping("/{eventId}")
-    EventFullDto findEventById(@PathVariable Long eventId);
+    @GetMapping("/events/{eventId}")
+    EventFullDto findEventById(@PathVariable("eventId") Long eventId);
 
-    @GetMapping("/{userId}/{eventId}")
-    EventFullDto getByUserIdAndEventId(@PathVariable Long userId, @PathVariable Long eventId);
+    @GetMapping("/users/{userId}/events/{eventId}")
+    EventFullDto getByUserIdAndEventId(@PathVariable("userId") Long userId, @PathVariable("eventId") Long eventId);
 
-    @PatchMapping("/{eventId}/pre-moderation")
-    void appendForbiddenWords(@PathVariable Long eventId, @RequestBody PreModerationRequest body);
+    @PatchMapping("/admin/events/{eventId}/pre-moderation")
+    void appendForbiddenWords(@PathVariable("eventId") Long eventId, @RequestBody PreModerationRequest body);
 }

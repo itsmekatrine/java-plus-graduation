@@ -5,8 +5,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.comment.*;
-import ru.practicum.dto.request.RequestStatus;
-import ru.practicum.entity.*;
+import ru.practicum.dto.event.EventFullDto;
+import ru.practicum.dto.event.EventState;
+import ru.practicum.exception.BadRequestException;
+import ru.practicum.feign.EventClient;
+import ru.practicum.model.Comment;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.ForbiddenException;
 import ru.practicum.exception.NotFoundException;
@@ -14,38 +17,36 @@ import ru.practicum.feign.RequestClient;
 import ru.practicum.feign.UserClient;
 import ru.practicum.mapper.CommentMapper;
 import ru.practicum.repository.CommentRepository;
-import ru.practicum.repository.EventRepository;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CommentService {
 
-    private final EventRepository eventRepository;
     private final UserClient userClient;
+    private final EventClient eventClient;
     private final CommentRepository commentRepository;
     private final CommentMapper mapper;
     private final RequestClient requestClient;
 
     @Transactional
     public CommentDto addComment(Long userId, Long eventId, CreateUpdateCommentDto dto) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Событие не найдено"));
+        EventFullDto event = eventClient.findEventById(eventId);
+
         if (event.getState() != EventState.PUBLISHED) {
             throw new ForbiddenException("Событие должно быть опубликовано");
         }
         userClient.getUserById(userId);
 
-        validateContent(dto.getContent(), event.getForbiddenWords());
+        Set<String> forbidden = event.getForbiddenWords() == null ? Collections.emptySet() : event.getForbiddenWords();
+
+        validateContent(dto.getContent(), forbidden);
 
         Comment comment = new Comment();
-        comment.setEvent(event);
+        comment.setEventId(eventId);
         comment.setAuthorId(userId);
         comment.setContent(dto.getContent());
         comment.setCreated(LocalDateTime.now());
@@ -63,34 +64,36 @@ public class CommentService {
 
     @Transactional
     public void addPreModeration(Long userId, Long eventId, PreModerationRequest preModerationDto) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Событие не найдено"));
-        if (!event.getInitiatorId().equals(userId)) {
+        EventFullDto event = eventClient.getByUserIdAndEventId(userId, eventId);
+        Long initiatorId = event.getInitiator() != null ? event.getInitiator().getId() : null;
+
+        if (!Objects.equals(initiatorId, userId)) {
             throw new ForbiddenException("Только инициатор события может устанавливать премодерацию");
         }
-        if (event.getForbiddenWords() == null) {
-            event.setForbiddenWords(preModerationDto.getForbiddenWords());
-        } else {
-            event.getForbiddenWords().addAll(preModerationDto.getForbiddenWords());
+        if (preModerationDto == null || preModerationDto.getForbiddenWords() == null || preModerationDto.getForbiddenWords().isEmpty()) {
+            throw new BadRequestException("Список слов пуст");
         }
-        eventRepository.save(event);
+
+        eventClient.appendForbiddenWords(eventId, preModerationDto);
     }
 
     @Transactional
     public CommentDto updateComment(Long userId, Long eventId, Long commentId, CreateUpdateCommentDto dto) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new NotFoundException("Событие не найдено"));
+        EventFullDto event = eventClient.getByUserIdAndEventId(userId, eventId);
+
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new NotFoundException("Комментарий не найден"));
 
-        if (!Objects.equals(event.getId(), comment.getEvent().getId())) {
-            throw new ConflictException("Собысте в пути запроса и событие комментария не совпадают");
+        if (!Objects.equals(eventId, comment.getEventId())) {
+            throw new ConflictException("Событие в пути запроса и событие комментария не совпадают");
         }
         if (!Objects.equals(comment.getAuthorId(), userId)) {
             throw new ForbiddenException("Редактировать можно только свои комментарии");
         }
 
-        validateContent(dto.getContent(), comment.getEvent().getForbiddenWords());
+        Set<String> forbidden = event.getForbiddenWords() == null ? Collections.emptySet() : event.getForbiddenWords();
+
+        validateContent(dto.getContent(), forbidden);
 
         comment.setContent(dto.getContent());
         comment.setUpdated(LocalDateTime.now());

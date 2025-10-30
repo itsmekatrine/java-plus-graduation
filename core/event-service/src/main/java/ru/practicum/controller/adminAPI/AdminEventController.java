@@ -5,10 +5,12 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.dto.comment.PreModerationRequest;
 import ru.practicum.dto.event.EventFullDto;
+import ru.practicum.dto.event.EventState;
 import ru.practicum.dto.event.UpdateEventAdminRequest;
-import ru.practicum.entity.EventState;
 import ru.practicum.parameters.EventAdminSearchParam;
 import ru.practicum.service.EventService;
 
@@ -53,5 +55,13 @@ public class AdminEventController {
                                     @RequestBody @Valid UpdateEventAdminRequest updateRequest) {
         log.info("Updating event id={}", eventId);
         return eventService.updateEventByAdmin(eventId, updateRequest);
+    }
+
+    @PatchMapping("/{eventId}/pre-moderation")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void appendForbidden(@PathVariable @Positive Long eventId,
+                                @RequestBody @Valid PreModerationRequest body) {
+        log.info("Append forbidden words for eventId={}, words={}", eventId, body.getForbiddenWords());
+        eventService.appendForbiddenWords(eventId, body.getForbiddenWords());
     }
 }

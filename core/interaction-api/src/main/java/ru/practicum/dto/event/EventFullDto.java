@@ -6,6 +6,7 @@ import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.user.UserShortDto;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 @Builder
@@ -29,4 +30,5 @@ public class EventFullDto {
     LocalDateTime publishedOn;
     Boolean requestModeration;
     EventState state;
+    Set<String> forbiddenWords;
 }

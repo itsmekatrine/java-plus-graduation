@@ -1,4 +1,4 @@
-package ru.practicum.entity;
+package ru.practicum.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -6,8 +6,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -22,11 +20,8 @@ public class Comment {
     @Column(name = "id", nullable = false)
     Long id;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "event_id", nullable = false)
-    Event event;
+    @Column(name = "event_id")
+    Long eventId;
 
     @Column(name = "author_id")
     Long authorId;

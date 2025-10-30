@@ -201,6 +201,19 @@ public class EventService {
         return dto;
     }
 
+    @Transactional
+    public void appendForbiddenWords(Long eventId, Set<String> words) {
+        Event e = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Событие не найдено"));
+        if (e.getForbiddenWords() == null) {
+            e.setForbiddenWords(new HashSet<>());
+        }
+        if (words != null && !words.isEmpty()) {
+            e.getForbiddenWords().addAll(words);
+        }
+        eventRepository.save(e);
+    }
+
     private void updateNouNullFields(Event eventToUpdate, UpdateEventRequest event) {
         if (event.getAnnotation() != null) eventToUpdate.setAnnotation(event.getAnnotation());
         if (event.getCategory() != null) eventToUpdate.setCategory(Category.builder().id(event.getCategory()).build());

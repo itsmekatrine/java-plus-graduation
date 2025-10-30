@@ -1,4 +1,4 @@
-package ru.practicum.controller.privateAPI;
+package ru.practicum.controller;
 
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;

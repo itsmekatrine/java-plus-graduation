@@ -12,10 +12,10 @@ import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.event.SortSearchParam;
 import ru.practicum.exception.BadRequestException;
+import ru.practicum.feign.CommentClient;
 import ru.practicum.feign.StatsClient;
 import ru.practicum.parameters.PageableSearchParam;
 import ru.practicum.parameters.PublicSearchParam;
-import ru.practicum.service.CommentService;
 import ru.practicum.service.EventService;
 
 import java.time.LocalDateTime;
@@ -29,7 +29,7 @@ import java.util.List;
 public class EventController {
 
     private final EventService eventService;
-    private final CommentService commentService;
+    private final CommentClient commentClient;
     private final StatsClient statsClient;
 
     @GetMapping
@@ -108,6 +108,7 @@ public class EventController {
                                                          @RequestParam(defaultValue = "10") Integer size) {
         PageableSearchParam param = PageableSearchParam.builder().size(size).from(from).build();
         log.info("Returned comments to event id={}", eventId);
-        return commentService.getCommentsByEventId(eventId, param.getPageable());
+
+        return commentClient.getCommentsByEventId(eventId, from, size);
     }
 }

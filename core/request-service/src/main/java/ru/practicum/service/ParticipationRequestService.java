@@ -1,5 +1,6 @@
 package ru.practicum.service;
 
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,14 +58,30 @@ public class ParticipationRequestService {
         }
         userClient.getUserById(userId);
 
-        EventFullDto event = eventClient.findEventById(eventId);
+        EventFullDto event;
+        try {
+            event = eventClient.findEventById(eventId);
+        } catch (feign.FeignException e) {
+            if (e.status() == 404) {
+                throw new ConflictException("Event must be PUBLISHED");
+            }
+            throw e;
+        }
 
-        Long initiatorId = (event.getInitiator() != null)
-                ? event.getInitiator().getId()
-                : null;
+        Long initiatorId = (event.getInitiator() != null) ? event.getInitiator().getId() : null;
 
         if (initiatorId != null && initiatorId.equals(userId)) {
             throw new ConflictException("Initiator cannot request participation for own event");
+        }
+
+        if (initiatorId == null) {
+            try {
+                eventClient.getByUserIdAndEventId(userId, eventId);
+                throw new ConflictException("Initiator cannot request participation for own event");
+            } catch (NotFoundException ex) {
+            } catch (FeignException nf) {
+                if (nf.status() != 404) throw nf;
+            }
         }
 
         if (event.getState() != EventState.PUBLISHED) {

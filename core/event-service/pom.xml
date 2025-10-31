@@ -41,6 +41,12 @@
             <artifactId>feign-okhttp</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-httpclient</artifactId>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
         </dependency>

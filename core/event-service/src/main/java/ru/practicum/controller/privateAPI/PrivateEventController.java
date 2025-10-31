@@ -79,6 +79,6 @@ public class PrivateEventController {
                                                               @PathVariable @Positive Long eventId,
                                                               @RequestBody @Valid EventRequestStatusUpdateRequest body) {
         log.info("Update requests for eventId={} by userId={}, body={}", eventId, userId, body);
-        return requestClient.updateEventRequests(userId, eventId, body);
+        return eventService.updateEventRequests(userId, eventId, body);
     }
 }

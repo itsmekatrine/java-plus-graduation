@@ -8,8 +8,6 @@ import ru.practicum.dto.event.EventState;
 import ru.practicum.dto.request.EventRequestStatusUpdateRequest;
 import ru.practicum.dto.request.EventRequestStatusUpdateResult;
 import ru.practicum.dto.request.RequestStatus;
-import ru.practicum.dto.user.UserDto;
-import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.feign.EventClient;
@@ -57,14 +55,12 @@ public class ParticipationRequestService {
         }
         userClient.getUserById(userId);
 
-        EventFullDto event;
-        try {
-            event = eventClient.findEventById(eventId);
-        } catch (feign.FeignException e) {
-            if (e.status() == 404) {
-                throw new ConflictException("Event must be PUBLISHED");
-            }
-            throw e;
+        EventFullDto event = eventClient.findEventById(eventId);
+        if (Objects.equals(event.getInitiator().getId(), userId)) {
+            throw new ConflictException("Initiator cannot request participation for own event");
+        }
+        if (event.getState() != EventState.PUBLISHED) {
+            throw new ConflictException("Event must be PUBLISHED");
         }
 
         Long initiatorId = (event.getInitiator() != null)
@@ -177,33 +173,6 @@ public class ParticipationRequestService {
         }
         r.setStatus(RequestStatus.CANCELED);
         return requestMapper.toDto(requestRepository.save(r));
-    }
-
-    private void updateRequests(List<ParticipationRequest> requests, RequestStatus status, EventFullDto event) {
-        boolean hasNotPending = requests.stream()
-                .anyMatch(r -> r.getStatus() != RequestStatus.PENDING);
-        if (hasNotPending) throw new ConflictException("Can't change status when request status is not PENDING");
-
-        final boolean moderation = Boolean.TRUE.equals(event.getRequestModeration());
-        final Integer limitBoxed = event.getParticipantLimit();
-        final boolean unlimited = (limitBoxed == null || limitBoxed == 0);
-
-        if (status == RequestStatus.REJECTED) {
-            requests.forEach(r -> r.setStatus(RequestStatus.REJECTED));
-            requestRepository.saveAll(requests);
-            return;
-        }
-
-        long confirmed = requestRepository.countByEventIdAndStatus(event.getId(), RequestStatus.CONFIRMED);
-
-        for (ParticipationRequest r : requests) {
-            if (!unlimited && confirmed >= limitBoxed) {
-                throw new ConflictException("Requests out of limit");
-            }
-            r.setStatus(status);
-            confirmed++;
-        }
-        requestRepository.saveAll(requests);
     }
 
     private static RequestStatus toModelStatus(ru.practicum.dto.request.RequestStatus s) {

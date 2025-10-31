@@ -12,9 +12,9 @@ import java.util.Set;
 @Getter
 @Setter
 @Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
-@NoArgsConstructor
+@Builder(toBuilder = true)
 @Table(
         name = "category",
         uniqueConstraints = @UniqueConstraint(name = "uq_category_name", columnNames = "name")

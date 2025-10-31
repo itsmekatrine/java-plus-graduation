@@ -75,15 +75,9 @@ public class ParticipationRequestService {
         }
 
         boolean moderationOff = Boolean.FALSE.equals(event.getRequestModeration());
-        RequestStatus status;
-        if (moderationOff || limit == 0) {
-            if (limit > 0 && confirmed >= limit) {
-                throw new ConflictException("Participant limit reached");
-            }
-            status = RequestStatus.CONFIRMED;
-        } else {
-            status = RequestStatus.PENDING;
-        }
+        RequestStatus status = (moderationOff || limit == 0)
+                ? RequestStatus.CONFIRMED
+                : RequestStatus.PENDING;
 
         ParticipationRequest request = ParticipationRequest.builder()
                 .created(LocalDateTime.now())

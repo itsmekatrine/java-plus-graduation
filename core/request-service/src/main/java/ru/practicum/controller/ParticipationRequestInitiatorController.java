@@ -1,6 +1,7 @@
 package ru.practicum.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
@@ -22,13 +23,14 @@ public class ParticipationRequestInitiatorController {
     private final ParticipationRequestService service;
 
     @GetMapping
-    public List<ParticipationRequestDto> list(@PathVariable Long userId, @PathVariable Long eventId) {
+    public List<ParticipationRequestDto> list(@PathVariable @Positive Long userId,
+                                              @PathVariable @Positive Long eventId) {
         log.info("List requests: userId={}, eventId={}", userId, eventId);
-        return service.getRequestForEventByUserId(userId, eventId);
+        return service.getRequestForEventByUserId(eventId, userId);
     }
 
     @PatchMapping
-    public EventRequestStatusUpdateResult updateStatuses(@PathVariable Long userId, @PathVariable Long eventId,
+    public EventRequestStatusUpdateResult updateStatuses(@PathVariable @Positive Long userId, @PathVariable @Positive Long eventId,
                                                          @RequestBody @Valid EventRequestStatusUpdateRequest body) {
         log.info("Update request statuses: userId={}, eventId={}, body={}", userId, eventId, body);
         return service.updateRequest(userId, eventId, body);

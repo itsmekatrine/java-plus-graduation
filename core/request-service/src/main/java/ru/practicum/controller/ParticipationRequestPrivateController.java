@@ -28,7 +28,7 @@ public class ParticipationRequestPrivateController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ParticipationRequestDto createRequest(@PathVariable @Positive Long userId,
-                                                 @RequestParam("eventId") Long eventId) {
+                                                 @RequestParam("eventId") @Positive Long eventId) {
         return requestService.createRequest(userId, eventId);
     }
 

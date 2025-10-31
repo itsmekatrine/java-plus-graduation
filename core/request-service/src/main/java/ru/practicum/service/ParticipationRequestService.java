@@ -59,7 +59,10 @@ public class ParticipationRequestService {
 
         EventFullDto event = eventClient.findEventById(eventId);
 
-        Long initiatorId = event.getInitiator() != null ? event.getInitiator().getId() : null;
+        Long initiatorId = (event.getInitiator() != null)
+                ? event.getInitiator().getId()
+                : null;
+
         if (initiatorId != null && initiatorId.equals(userId)) {
             throw new ConflictException("Initiator cannot request participation for own event");
         }
@@ -95,38 +98,59 @@ public class ParticipationRequestService {
         EventFullDto event = eventClient.getByUserIdAndEventId(userId, eventId);
 
         List<ParticipationRequest> requests = requestRepository.findAllByIdIn(updateRequest.getRequestIds());
+        if (requests.size() != updateRequest.getRequestIds().size()) {
+            throw new NotFoundException("Some participation requests were not found by ids");
+        }
 
-        for (ParticipationRequest request : requests) {
-            if (!request.getEventId().equals(eventId)) {
-                throw new NotFoundException("Request with requestId = " + request.getId() + "does not match eventId = " + eventId);
+        for (ParticipationRequest r : requests) {
+            if (!r.getEventId().equals(eventId)) {
+                throw new NotFoundException("Request id=" + r.getId() + " does not match eventId=" + eventId);
+            }
+            if (r.getStatus() != RequestStatus.PENDING) {
+                throw new ConflictException("Only requests in PENDING status can be updated");
             }
         }
 
-        int confirmedCount = requestRepository.findAllByEventIdAndStatus(eventId, RequestStatus.CONFIRMED).size();
-        int size = updateRequest.getRequestIds().size();
-        int confirmedSize = updateRequest.getStatus().equals(RequestStatus.CONFIRMED) ? size : 0;
+        Integer limit = event.getParticipantLimit() == null ? 0 : event.getParticipantLimit();
+        int confirmedBefore = requestRepository
+                .findAllByEventIdAndStatus(eventId, RequestStatus.CONFIRMED)
+                .size();
 
-        if (event.getParticipantLimit() != 0 && confirmedCount + confirmedSize > event.getParticipantLimit()) {
+        boolean confirmMode = updateRequest.getStatus().equals(RequestStatus.CONFIRMED);
+        int toConfirm = confirmMode ? requests.size() : 0;
+
+        if (limit > 0 && confirmedBefore + toConfirm > limit) {
             throw new ConflictException("Event limit exceed");
         }
 
         List<ParticipationRequestDto> confirmedRequests = new ArrayList<>();
         List<ParticipationRequestDto> rejectedRequests = new ArrayList<>();
 
-        for (ParticipationRequest request : requests) {
-            if (updateRequest.getStatus().equals(RequestStatus.CONFIRMED)) {
-                request.setStatus(RequestStatus.CONFIRMED);
-                confirmedRequests.add(requestMapper.toDto(request));
-            } else if (updateRequest.getStatus().equals(RequestStatus.REJECTED)) {
-                if (request.getStatus().equals(RequestStatus.CONFIRMED)) {
-                    throw new ConflictException("The request cannot be rejected if it is confirmed");
-                }
-                request.setStatus(RequestStatus.REJECTED);
-                rejectedRequests.add(requestMapper.toDto(request));
+        if (confirmMode) {
+            for (ParticipationRequest r : requests) {
+                r.setStatus(RequestStatus.CONFIRMED);
             }
-        }
+            requestRepository.saveAll(requests);
+            requests.forEach(r -> confirmedRequests.add(requestMapper.toDto(r)));
 
-        requestRepository.saveAll(requests);
+            if (limit > 0 && confirmedBefore + toConfirm == limit) {
+                List<ParticipationRequest> pendingOthers =
+                        requestRepository.findAllByEventIdAndStatus(eventId, RequestStatus.PENDING);
+                if (!pendingOthers.isEmpty()) {
+                    pendingOthers.forEach(r -> r.setStatus(RequestStatus.REJECTED));
+                    requestRepository.saveAll(pendingOthers);
+                    pendingOthers.forEach(r -> rejectedRequests.add(requestMapper.toDto(r)));
+                }
+            }
+        } else if (updateRequest.getStatus().equals(RequestStatus.REJECTED)) {
+            for (ParticipationRequest r : requests) {
+                r.setStatus(RequestStatus.REJECTED);
+            }
+            requestRepository.saveAll(requests);
+            requests.forEach(r -> rejectedRequests.add(requestMapper.toDto(r)));
+        } else {
+            throw new ConflictException("Unknown target status: " + updateRequest.getStatus());
+        }
 
         return EventRequestStatusUpdateResult.builder()
                 .confirmedRequests(confirmedRequests)

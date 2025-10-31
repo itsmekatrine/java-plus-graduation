@@ -1,5 +1,6 @@
 package ru.practicum.feign;
 
+import feign.FeignException;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,5 +15,5 @@ public interface CommentClient {
     @GetMapping("/{eventId}/comments")
     List<CommentWithUserDto> getCommentsByEventId(@PathVariable Long eventId,
                                                   @RequestParam Integer from,
-                                                  @RequestParam Integer size);
+                                                  @RequestParam Integer size) throws FeignException;;
 }

@@ -289,7 +289,7 @@ public class EventService {
                     new BulkStatusUpdateRequest(eventId, targetIds, "CONFIRMED"));
 
             if (!unlimited && (alreadyConfirmed + confirmed.size()) >= limit) {
-                java.util.List<Long> leftoversIds = allForEvent.stream()
+                List<Long> leftoversIds = allForEvent.stream()
                         .filter(dto -> dto.getStatus() == RequestStatus.PENDING)
                         .map(ParticipationRequestDto::getId)
                         .filter(id -> !targetIds.contains(id))

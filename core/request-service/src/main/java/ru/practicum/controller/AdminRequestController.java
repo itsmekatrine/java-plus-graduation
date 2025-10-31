@@ -1,12 +1,11 @@
 package ru.practicum.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import ru.practicum.dto.request.BulkStatusUpdateRequest;
 import ru.practicum.dto.request.ParticipationRequestDto;
 import ru.practicum.dto.request.RequestStatus;
+import ru.practicum.exception.ConflictException;
 import ru.practicum.mapper.ParticipationRequestMapper;
 import ru.practicum.model.ParticipationRequest;
 import ru.practicum.repository.ParticipationRequestRepository;
@@ -50,5 +49,17 @@ public class AdminRequestController {
                           @RequestParam("eventId") Long eventId,
                           @RequestParam("status") String status) {
         return repo.existsByRequesterIdAndEventIdAndStatus(userId, eventId, RequestStatus.valueOf(status));
+    }
+
+    @PatchMapping("/bulk-status")
+    public List<ParticipationRequestDto> bulkStatus(@RequestBody BulkStatusUpdateRequest body) {
+        List<ParticipationRequest> list = repo.findAllById(body.getRequestIds());
+        boolean ok = list.stream().allMatch(r -> r.getEventId().equals(body.getEventId()));
+        if (!ok) throw new ConflictException("All requestIds must belong to the event");
+
+        RequestStatus newStatus = RequestStatus.valueOf(body.getStatus()); // "CONFIRMED"/"REJECTED"
+        list.forEach(r -> r.setStatus(newStatus));
+        repo.saveAll(list);
+        return list.stream().map(mapper::toDto).toList();
     }
 }

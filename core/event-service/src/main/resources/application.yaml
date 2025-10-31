@@ -23,7 +23,7 @@ eureka:
     preferIpAddress: true
 
 feign:
-  httpclient:
+  okhttp:
     enabled: true
   circuitbreaker:
     enabled: true

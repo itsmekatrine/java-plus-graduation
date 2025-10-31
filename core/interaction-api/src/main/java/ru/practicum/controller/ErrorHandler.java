@@ -72,7 +72,17 @@ public class ErrorHandler {
     }
 
     @ExceptionHandler(feign.FeignException.class)
-    public ResponseEntity<String> handleFeign(FeignException ex) {
-        return ResponseEntity.status(ex.status()).body(ex.contentUTF8());
+    public ResponseEntity<ApiError> handleFeign(feign.FeignException e) {
+        int raw = e.status();
+        HttpStatus status = (raw >= 100 && raw < 600) ? HttpStatus.valueOf(raw) : HttpStatus.BAD_GATEWAY;
+
+        ApiError body = ApiError.builder()
+                .status(status.name())
+                .reason("Upstream request failed.")
+                .message(e.getMessage())
+                .timestamp(java.time.LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.status(status).body(body);
     }
 }

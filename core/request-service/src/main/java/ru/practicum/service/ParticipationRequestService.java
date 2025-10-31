@@ -20,6 +20,7 @@ import ru.practicum.repository.ParticipationRequestRepository;
 import ru.practicum.dto.request.ParticipationRequestDto;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -55,109 +56,97 @@ public class ParticipationRequestService {
 
     @Transactional
     public ParticipationRequestDto createRequest(Long userId, Long eventId) {
-        UserDto user = userClient.getUserById(userId);
-        if (user == null) {
-            throw new NotFoundException("User with id=" + userId + " was not found");
-        }
-        EventFullDto event;
-        try {
-            event = eventClient.findEventById(eventId);
-        } catch (feign.FeignException.NotFound ex) {
-            throw new ConflictException("Event must be published to request participation");
-        }
-
-        boolean existsActive =
-                requestRepository.existsByRequesterIdAndEventIdAndStatus(userId, eventId, RequestStatus.PENDING)
-                        || requestRepository.existsByRequesterIdAndEventIdAndStatus(userId, eventId, RequestStatus.CONFIRMED);
-        if (existsActive) {
+        if (requestRepository.existsByRequesterIdAndEventId(userId, eventId)) {
             throw new ConflictException("Participation request already exists");
         }
+        userClient.getUserById(userId);
+
+        EventFullDto event = eventClient.findEventById(eventId);
 
         Long initiatorId = event.getInitiator() != null ? event.getInitiator().getId() : null;
-        if (Objects.equals(initiatorId, userId)) {
-            throw new ConflictException("Initiator cannot request participation in their own event");
-        }
-        if (!EventState.PUBLISHED.equals(event.getState())) {
-            throw new ConflictException("Event must be published to request participation");
+        if (initiatorId != null && initiatorId.equals(userId)) {
+            throw new ConflictException("Initiator cannot request participation for own event");
         }
 
-        int limit = event.getParticipantLimit() == null ? 0 : event.getParticipantLimit();
+        if (event.getState() != EventState.PUBLISHED) {
+            throw new ConflictException("Event must be PUBLISHED");
+        }
+
+        Integer limit = event.getParticipantLimit() == null ? 0 : event.getParticipantLimit();
         long confirmed = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
-        if (limit != 0 && confirmed >= limit) {
-            throw new ConflictException("Event participant limit reached");
+        if (limit > 0 && confirmed >= limit) {
+            throw new ConflictException("Participant limit reached");
         }
 
-        ParticipationRequest result = new ParticipationRequest();
-        result.setRequesterId(userId);
-        result.setEventId(eventId);
-        boolean requiresModeration = Boolean.TRUE.equals(event.getRequestModeration());
-        result.setStatus((limit == 0 || !requiresModeration) ? RequestStatus.CONFIRMED : RequestStatus.PENDING);
-        result.setCreated(LocalDateTime.now());
+        boolean moderationOff = Boolean.FALSE.equals(event.getRequestModeration());
+        RequestStatus status;
+        if (moderationOff || limit == 0) {
+            if (limit > 0 && confirmed >= limit) {
+                throw new ConflictException("Participant limit reached");
+            }
+            status = RequestStatus.CONFIRMED;
+        } else {
+            status = RequestStatus.PENDING;
+        }
 
-        return requestMapper.toDto(requestRepository.save(result));
+        ParticipationRequest request = ParticipationRequest.builder()
+                .created(LocalDateTime.now())
+                .requesterId(userId)
+                .eventId(eventId)
+                .status(status)
+                .build();
+
+        return requestMapper.toDto(requestRepository.save(request));
     }
 
     @Transactional
     public EventRequestStatusUpdateResult updateRequest(Long userId, Long eventId,
                                                          EventRequestStatusUpdateRequest updateRequest) {
         EventFullDto event = eventClient.getByUserIdAndEventId(userId, eventId);
-        Long initiatorId = event.getInitiator() != null ? event.getInitiator().getId() : null;
-        if (!Objects.equals(initiatorId, userId)) {
-            throw new ConflictException("Can't update requests for event id=" + eventId + " by user id=" + userId);
-        }
-        if (updateRequest.getRequestIds() == null || updateRequest.getRequestIds().isEmpty()) {
-            throw new ConflictException("No requests to update");
-        }
 
-        List<ParticipationRequest> requests = requestRepository.findAllById(updateRequest.getRequestIds());
+        List<ParticipationRequest> requests = requestRepository.findAllByIdIn(updateRequest.getRequestIds());
 
-        if (requests.stream().anyMatch(r -> !Objects.equals(r.getEventId(), eventId))) {
-            throw new NotFoundException("Some requests do not belong to event id=" + eventId);
+        for (ParticipationRequest request : requests) {
+            if (!request.getEventId().equals(eventId)) {
+                throw new NotFoundException("Request with requestId = " + request.getId() + "does not match eventId = " + eventId);
+            }
         }
 
-        if (requests.stream().anyMatch(r -> r.getStatus() != RequestStatus.PENDING)) {
-            throw new ConflictException("Request must have status PENDING");
+        int confirmedCount = requestRepository.findAllByEventIdAndStatus(eventId, RequestStatus.CONFIRMED).size();
+        int size = updateRequest.getRequestIds().size();
+        int confirmedSize = updateRequest.getStatus().equals(RequestStatus.CONFIRMED) ? size : 0;
+
+        if (event.getParticipantLimit() != 0 && confirmedCount + confirmedSize > event.getParticipantLimit()) {
+            throw new ConflictException("Event limit exceed");
         }
 
-        RequestStatus target = toModelStatus(updateRequest.getStatus());
-        EventRequestStatusUpdateResult result = new EventRequestStatusUpdateResult();
+        List<ParticipationRequestDto> confirmedRequests = new ArrayList<>();
+        List<ParticipationRequestDto> rejectedRequests = new ArrayList<>();
 
-        int limit = event.getParticipantLimit() == null ? 0 : event.getParticipantLimit();
-        long confirmed = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
-        boolean unlimited = (limit == 0);
-
-        if (target == RequestStatus.REJECTED) {
-            requests.forEach(r -> r.setStatus(RequestStatus.REJECTED));
-        } else if (target == RequestStatus.CONFIRMED) {
-            for (ParticipationRequest r : requests) {
-                if (!unlimited && confirmed >= limit) {
-                    rejectAllPendingExcept(eventId, Set.copyOf(updateRequest.getRequestIds()), result);
-                    throw new ConflictException("The participant limit has been reached");
+        for (ParticipationRequest request : requests) {
+            if (updateRequest.getStatus().equals(RequestStatus.CONFIRMED)) {
+                request.setStatus(RequestStatus.CONFIRMED);
+                confirmedRequests.add(requestMapper.toDto(request));
+            } else if (updateRequest.getStatus().equals(RequestStatus.REJECTED)) {
+                if (request.getStatus().equals(RequestStatus.CONFIRMED)) {
+                    throw new ConflictException("The request cannot be rejected if it is confirmed");
                 }
-                r.setStatus(RequestStatus.CONFIRMED);
-                confirmed++;
+                request.setStatus(RequestStatus.REJECTED);
+                rejectedRequests.add(requestMapper.toDto(request));
             }
-            if (!unlimited && confirmed >= limit) {
-                rejectAllPendingExcept(eventId, Set.copyOf(updateRequest.getRequestIds()), result);
-            }
-        } else {
-            throw new BadRequestException("Unsupported target status: " + target);
         }
 
         requestRepository.saveAll(requests);
 
-        for (ParticipationRequest r : requests) {
-            if (r.getStatus() == RequestStatus.CONFIRMED) {
-                result.getConfirmedRequests().add(requestMapper.toDto(r));
-            } else if (r.getStatus() == RequestStatus.REJECTED) {
-                result.getRejectedRequests().add(requestMapper.toDto(r));
-            }
-        }
-        return result;
+        return EventRequestStatusUpdateResult.builder()
+                .confirmedRequests(confirmedRequests)
+                .rejectedRequests(rejectedRequests)
+                .build();
     }
 
     @Transactional
     public ParticipationRequestDto cancelRequest(Long userId, Long requestId) {
+        userClient.getUserById(userId);
         ParticipationRequest r = requestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException("Request with id=" + requestId + " was not found"));
 

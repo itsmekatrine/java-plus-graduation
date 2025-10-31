@@ -45,12 +45,14 @@ public class CommentService {
 
         validateContent(dto.getContent(), forbidden);
 
-        Comment comment = new Comment();
-        comment.setEventId(eventId);
-        comment.setAuthorId(userId);
-        comment.setContent(dto.getContent());
-        comment.setCreated(LocalDateTime.now());
-        comment.setUpdated(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        Comment comment = Comment.builder()
+                .eventId(eventId)
+                .authorId(userId)
+                .content(dto.getContent())
+                .created(now)
+                .updated(now)
+                .build();
 
         comment = commentRepository.save(comment);
 

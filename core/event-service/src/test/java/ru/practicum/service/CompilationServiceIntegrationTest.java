@@ -29,20 +29,24 @@ class CompilationServiceIntegrationTest extends IntegrationTestBase {
 
     @Test
     void getAllCompilations_shouldReturnAll() {
-        Compilation compilation1 = new Compilation();
-        compilation1.setTitle("Favorites");
-        compilation1.setPinned(true);
-        entityManager.persist(compilation1);
+        Compilation c1 = Compilation.builder()
+                .title("Favorites")
+                .pinned(true)
+                .events(new java.util.LinkedHashSet<>())
+                .build();
+        entityManager.persist(c1);
 
-        Compilation compilation2 = new Compilation();
-        compilation2.setTitle("New Hits");
-        compilation2.setPinned(false);
-        entityManager.persist(compilation2);
+        Compilation c2 = Compilation.builder()
+                .title("New Hits")
+                .pinned(false)
+                .events(new java.util.LinkedHashSet<>())
+                .build();
+        entityManager.persist(c2);
 
         entityManager.flush();
         entityManager.clear();
 
-        List<CompilationDto> result = compilationService.getAllCompilations(PageRequest.of(0, 10));
+        var result = compilationService.getAllCompilations(PageRequest.of(0, 10));
 
         assertThat(result).hasSize(2);
         assertThat(result).extracting(CompilationDto::getTitle)
@@ -51,14 +55,16 @@ class CompilationServiceIntegrationTest extends IntegrationTestBase {
 
     @Test
     void getCompilationById_shouldReturnCompilation() {
-        Compilation compilation = new Compilation();
-        compilation.setTitle("Cinema");
-        compilation.setPinned(true);
-        entityManager.persist(compilation);
+        Compilation c = Compilation.builder()
+                .title("Cinema")
+                .pinned(true)
+                .events(new java.util.LinkedHashSet<>())
+                .build();
+        entityManager.persist(c);
         entityManager.flush();
         entityManager.clear();
 
-        CompilationDto dto = compilationService.getCompilationById(compilation.getId());
+        CompilationDto dto = compilationService.getCompilationById(c.getId());
 
         assertThat(dto).isNotNull();
         assertThat(dto.getTitle()).isEqualTo("Cinema");

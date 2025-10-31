@@ -14,8 +14,7 @@ import ru.practicum.mapper.CompilationMapper;
 import ru.practicum.repository.CompilationRepository;
 import ru.practicum.repository.EventRepository;
 
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -40,14 +39,30 @@ public class CompilationService {
 
     @Transactional
     public CompilationDto createCompilation(NewCompilationDto dto) {
-        Compilation compilation = new Compilation();
-        compilation.setTitle(dto.getTitle());
-        compilation.setPinned(Boolean.TRUE.equals(dto.getPinned()));
-
+        Set<Event> events = Collections.emptySet();
         if (dto.getEvents() != null && !dto.getEvents().isEmpty()) {
-            List<Event> events = eventRepository.findAllById(dto.getEvents().stream().map(Long::valueOf).toList());
-            compilation.setEvents(new HashSet<>(events));
+            List<Long> ids = dto.getEvents().stream()
+                    .mapToLong(n -> ((Number) n).longValue())
+                    .boxed()
+                    .distinct()
+                    .toList();
+
+            List<Event> found = eventRepository.findAllById(ids);
+
+            if (found.size() != ids.size()) {
+                Set<Long> foundIds = found.stream().map(Event::getId).collect(java.util.stream.Collectors.toSet());
+                List<Long> missing = ids.stream().filter(id -> !foundIds.contains(id)).toList();
+                throw new NotFoundException("Events not found: " + missing);
+            }
+
+            events = new LinkedHashSet<>(found);
         }
+
+        Compilation compilation = Compilation.builder()
+                .title(dto.getTitle())
+                .pinned(Boolean.TRUE.equals(dto.getPinned()))
+                .events(events)
+                .build();
 
         return compilationMapper.toDto(compilationRepository.save(compilation));
     }

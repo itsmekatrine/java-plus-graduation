@@ -38,16 +38,12 @@ public interface EventMapper {
     @Named("idToCategory")
     default Category idToCategory(Integer id) {
         if (id == null) return null;
-        Category c = new Category();
-        c.setId(id.longValue());
-        return c;
+        return Category.builder().id(id.longValue()).build();
     }
 
     @Named("idToCategory")
     default Category idToCategory(Long id) {
         if (id == null) return null;
-        Category c = new Category();
-        c.setId(id);
-        return c;
+        return Category.builder().id(id).build();
     }
 }

@@ -1,6 +1,7 @@
 package ru.practicum.controller;
 
 import feign.FeignException;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -55,6 +56,17 @@ public class ErrorHandler {
                 .status(HttpStatus.CONFLICT.name())
                 .reason("Integrity constraint has been violated.")
                 .message(msg)
+                .timestamp(LocalDateTime.now())
+                .build());
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiError> handleConstraint(ConstraintViolationException e) {
+        log.info("400 {}", e.getMessage());
+        return ResponseEntity.badRequest().body(ApiError.builder()
+                .status(HttpStatus.BAD_REQUEST.name())
+                .reason("Incorrectly made request.")
+                .message(e.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build());
     }

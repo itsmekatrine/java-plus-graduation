@@ -56,9 +56,6 @@ public class ParticipationRequestService {
         userClient.getUserById(userId);
 
         EventFullDto event = eventClient.findEventById(eventId);
-        if (Objects.equals(event.getInitiator().getId(), userId)) {
-            throw new ConflictException("Initiator cannot request participation for own event");
-        }
         if (event.getState() != EventState.PUBLISHED) {
             throw new ConflictException("Event must be PUBLISHED");
         }

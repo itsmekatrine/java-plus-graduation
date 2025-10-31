@@ -37,10 +37,6 @@ public class ParticipationRequestService {
 
     public List<ParticipationRequestDto> getRequestForEventByUserId(Long userId, Long eventId) {
         EventFullDto event = eventClient.getByUserIdAndEventId(userId, eventId);
-        Long initiatorId = event.getInitiator() != null ? event.getInitiator().getId() : null;
-        if (!Objects.equals(initiatorId, userId)) {
-            throw new ConflictException("User " + userId + " is not the initiator of event " + eventId);
-        }
         return requestRepository.findAllByEventId(eventId).stream()
                 .map(requestMapper::toDto)
                 .toList();

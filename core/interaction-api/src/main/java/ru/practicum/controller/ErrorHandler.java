@@ -99,8 +99,7 @@ public class ErrorHandler {
     @ExceptionHandler(feign.FeignException.class)
     public ResponseEntity<ApiError> handleFeign(feign.FeignException e) {
         int raw = e.status();
-        HttpStatus status = (raw >= 100 && raw < 600) ? HttpStatus.valueOf(raw) : HttpStatus.BAD_GATEWAY;
-        log.info("{} (feign) {}", status.value(), e.getMessage());
+        HttpStatus status = (raw >= 400 && raw < 600) ? HttpStatus.valueOf(raw) : HttpStatus.BAD_GATEWAY;
         ApiError body = ApiError.builder()
                 .status(status.name())
                 .reason("Upstream request failed.")

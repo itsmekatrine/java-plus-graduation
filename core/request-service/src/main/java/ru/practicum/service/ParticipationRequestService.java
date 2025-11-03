@@ -80,41 +80,10 @@ public class ParticipationRequestService {
                 .created(LocalDateTime.now())
                 .requesterId(userId)
                 .eventId(eventId)
-                .status(RequestStatus.PENDING)
+                .status(autoConfirm ? RequestStatus.CONFIRMED : RequestStatus.PENDING)
                 .build();
 
         ParticipationRequest saved = requestRepository.saveAndFlush(request);
-
-        if (autoConfirm) {
-            EventRequestStatusUpdateRequest body = new EventRequestStatusUpdateRequest();
-            body.setRequestIds(List.of(saved.getId()));
-            body.setStatus(RequestStatus.CONFIRMED);
-
-            try {
-                EventRequestStatusUpdateResult result =
-                        eventClient.updateEventRequests(initiatorId, eventId, body);
-
-                final Long requestId = saved.getId();
-                boolean confirmedHere = result != null
-                        && result.getConfirmedRequests() != null
-                        && result.getConfirmedRequests().stream()
-                        .anyMatch(r -> java.util.Objects.equals(r.getId(), requestId));
-
-                if (!confirmedHere) {
-                    throw new ConflictException("The participant limit has been reached");
-                }
-
-                saved.setStatus(RequestStatus.CONFIRMED);
-                requestRepository.saveAndFlush(saved);
-
-            } catch (feign.FeignException e) {
-                if (e.status() == 409) {
-                    throw new ConflictException("The participant limit has been reached");
-                }
-                throw e;
-            }
-        }
-
         return requestMapper.toDto(saved);
     }
 

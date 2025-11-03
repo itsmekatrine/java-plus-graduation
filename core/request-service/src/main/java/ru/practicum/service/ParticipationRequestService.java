@@ -86,7 +86,8 @@ public class ParticipationRequestService {
                 .status(status)
                 .build();
 
-        return requestMapper.toDto(requestRepository.save(request));
+        ParticipationRequest saved = requestRepository.saveAndFlush(request);
+        return requestMapper.toDto(saved);
     }
 
     @Transactional
@@ -127,7 +128,7 @@ public class ParticipationRequestService {
             for (ParticipationRequest r : requests) {
                 r.setStatus(RequestStatus.CONFIRMED);
             }
-            requestRepository.saveAll(requests);
+            requestRepository.saveAllAndFlush(requests);
             requests.forEach(r -> confirmedRequests.add(requestMapper.toDto(r)));
 
             if (limit > 0 && confirmedBefore + toConfirm == limit) {
@@ -135,7 +136,7 @@ public class ParticipationRequestService {
                         requestRepository.findAllByEventIdAndStatus(eventId, RequestStatus.PENDING);
                 if (!pendingOthers.isEmpty()) {
                     pendingOthers.forEach(r -> r.setStatus(RequestStatus.REJECTED));
-                    requestRepository.saveAll(pendingOthers);
+                    requestRepository.saveAllAndFlush(pendingOthers);
                     pendingOthers.forEach(r -> rejectedRequests.add(requestMapper.toDto(r)));
                 }
             }
@@ -143,7 +144,7 @@ public class ParticipationRequestService {
             for (ParticipationRequest r : requests) {
                 r.setStatus(RequestStatus.REJECTED);
             }
-            requestRepository.saveAll(requests);
+            requestRepository.saveAllAndFlush(requests);
             requests.forEach(r -> rejectedRequests.add(requestMapper.toDto(r)));
         } else {
             throw new ConflictException("Unknown target status: " + updateRequest.getStatus());
@@ -165,7 +166,8 @@ public class ParticipationRequestService {
             throw new ConflictException("User is not the requester");
         }
         r.setStatus(RequestStatus.CANCELED);
-        return requestMapper.toDto(requestRepository.save(r));
+        ParticipationRequest saved = requestRepository.saveAndFlush(r);
+        return requestMapper.toDto(saved);
     }
 
     private static RequestStatus toModelStatus(ru.practicum.dto.request.RequestStatus s) {
@@ -178,7 +180,7 @@ public class ParticipationRequestService {
             if (exceptIds.contains(p.getId())) continue;
             p.setStatus(RequestStatus.REJECTED);
         }
-        requestRepository.saveAll(pendings);
+        requestRepository.saveAllAndFlush(pendings);
         pendings.forEach(p -> out.getRejectedRequests().add(requestMapper.toDto(p)));
     }
 }

@@ -47,14 +47,14 @@ public class EventSpecifications {
     public static Specification<Event> startAfter(LocalDateTime rangeStart) {
         return (root, query, criteriaBuilder) ->
                 rangeStart != null
-                        ? criteriaBuilder.greaterThan(root.get("eventDate"), rangeStart)
+                        ? criteriaBuilder.greaterThanOrEqualTo(root.get("eventDate"), rangeStart)
                         : criteriaBuilder.conjunction();
     }
 
     public static Specification<Event> startBefore(LocalDateTime rangeEnd) {
         return (root, query, criteriaBuilder) ->
                 rangeEnd != null
-                        ? criteriaBuilder.lessThan(root.get("eventDate"), rangeEnd)
+                        ? criteriaBuilder.lessThanOrEqualTo(root.get("eventDate"), rangeEnd)
                         : criteriaBuilder.conjunction();
     }
 

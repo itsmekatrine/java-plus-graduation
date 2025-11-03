@@ -78,8 +78,8 @@ public class ParticipationRequestService {
 
         ParticipationRequest request = ParticipationRequest.builder()
                 .created(LocalDateTime.now())
-                .requesterId(userId)
                 .eventId(eventId)
+                .requesterId(userId)
                 .status(autoConfirm ? RequestStatus.CONFIRMED : RequestStatus.PENDING)
                 .build();
 

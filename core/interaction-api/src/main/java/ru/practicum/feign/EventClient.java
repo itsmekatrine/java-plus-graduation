@@ -18,6 +18,9 @@ public interface EventClient {
     @GetMapping("/events/{eventId}")
     EventFullDto findEventById(@PathVariable("eventId") Long eventId) throws FeignException;
 
+    @GetMapping("/internal/events/{eventId}")
+    EventFullDto findEventForInternalUse(@PathVariable("eventId") Long eventId) throws FeignException;
+
     @GetMapping("/users/{userId}/events/{eventId}")
     EventFullDto getByUserIdAndEventId(@PathVariable("userId") Long userId, @PathVariable("eventId") Long eventId) throws FeignException;
 

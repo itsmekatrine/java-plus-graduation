@@ -50,9 +50,6 @@ public class EventController {
         if (rangeStart != null && rangeEnd != null && rangeStart.isAfter(rangeEnd)) {
             throw new BadRequestException("rangeEnd can't before rangeStart");
         }
-        if (rangeEnd == null && rangeStart == null) {
-            rangeStart = LocalDateTime.now();
-        }
 
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 

@@ -121,6 +121,20 @@ public class EventService {
         return dto;
     }
 
+    public EventFullDto getEventForInternalUse(Long eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Событие не найдено"));
+
+        Long id = event.getId();
+        Map<Long, Long> confirmed = getConfirmedMap(List.of(id));
+        Map<Long, Long> views = getViews(List.of(id));
+
+        EventFullDto dto = eventMapper.toFullDto(event);
+        dto.setConfirmedRequests(confirmed.getOrDefault(id, 0L));
+        dto.setViews(views.getOrDefault(id, 0L));
+        return dto;
+    }
+
     public EventFullDto getEventByIdAndUserId(Long eventId, Long userId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Событие не найдено"));

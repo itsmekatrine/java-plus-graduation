@@ -6,6 +6,7 @@ import org.mapstruct.Named;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.dto.event.NewEventDto;
+import ru.practicum.dto.user.UserShortDto;
 import ru.practicum.entity.Category;
 import ru.practicum.entity.Event;
 
@@ -14,12 +15,14 @@ public interface EventMapper {
 
     @Mapping(target = "views", ignore = true)
     @Mapping(target = "confirmedRequests", ignore = true)
+    @Mapping(target = "initiator", expression = "java(toUserShortDto(event.getInitiatorId()))")
     EventShortDto toShortDto(Event event);
 
     @Mapping(target = "views", ignore = true)
     @Mapping(target = "confirmedRequests", ignore = true)
     @Mapping(target = "location.lat", source = "lat")
     @Mapping(target = "location.lon", source = "lon")
+    @Mapping(target = "initiator", expression = "java(toUserShortDto(event.getInitiatorId()))")
     EventFullDto toFullDto(Event event);
 
     @Mapping(target = "lat", expression = "java(dto.getLocation() != null ? dto.getLocation().getLat() : null)")
@@ -45,5 +48,14 @@ public interface EventMapper {
     default Category idToCategory(Long id) {
         if (id == null) return null;
         return Category.builder().id(id).build();
+    }
+
+    default UserShortDto toUserShortDto(Long initiatorId) {
+        if (initiatorId == null) {
+            return null;
+        }
+        return UserShortDto.builder()
+                .id(initiatorId)
+                .build();
     }
 }

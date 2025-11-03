@@ -1,6 +1,7 @@
 package ru.practicum.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.request.BulkStatusUpdateRequest;
 import ru.practicum.dto.request.ParticipationRequestDto;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/admin/requests")
 @RequiredArgsConstructor
+@Validated
 public class AdminRequestController {
 
     private final ParticipationRequestRepository repo;

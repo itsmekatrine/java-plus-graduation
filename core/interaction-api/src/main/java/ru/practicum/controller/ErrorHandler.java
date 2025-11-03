@@ -1,6 +1,5 @@
 package ru.practicum.controller;
 
-import feign.FeignException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;

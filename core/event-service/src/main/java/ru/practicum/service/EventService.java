@@ -291,11 +291,8 @@ public class EventService {
         } else if (action == RequestStatus.CONFIRMED) {
             if (!unlimited) {
                 long freeSlots = limit - alreadyConfirmed;
-                if (freeSlots <= 0) {
+                if (freeSlots <= 0 || targetIds.size() > freeSlots) {
                     throw new ConflictException("The participant limit has been reached");
-                }
-                if (targetIds.size() > freeSlots) {
-                    throw new ConflictException("The participant limit will be exceeded");
                 }
             }
 

@@ -71,22 +71,50 @@ public class ParticipationRequestService {
         Integer limit = event.getParticipantLimit() == null ? 0 : event.getParticipantLimit();
         long confirmed = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
         if (limit > 0 && confirmed >= limit) {
-            throw new ConflictException("Participant limit reached");
+            throw new ConflictException("The participant limit has been reached");
         }
 
-        boolean moderationOff = Boolean.FALSE.equals(event.getRequestModeration());
-        RequestStatus status = (moderationOff || limit == 0)
-                ? RequestStatus.CONFIRMED
-                : RequestStatus.PENDING;
+        boolean autoConfirm = Boolean.FALSE.equals(event.getRequestModeration()) || limit == 0;
 
         ParticipationRequest request = ParticipationRequest.builder()
                 .created(LocalDateTime.now())
                 .requesterId(userId)
                 .eventId(eventId)
-                .status(status)
+                .status(RequestStatus.PENDING)
                 .build();
 
         ParticipationRequest saved = requestRepository.saveAndFlush(request);
+
+        if (autoConfirm) {
+            EventRequestStatusUpdateRequest body = new EventRequestStatusUpdateRequest();
+            body.setRequestIds(List.of(saved.getId()));
+            body.setStatus(RequestStatus.CONFIRMED);
+
+            try {
+                EventRequestStatusUpdateResult result =
+                        eventClient.updateEventRequests(initiatorId, eventId, body);
+
+                final Long requestId = saved.getId();
+                boolean confirmedHere = result != null
+                        && result.getConfirmedRequests() != null
+                        && result.getConfirmedRequests().stream()
+                        .anyMatch(r -> java.util.Objects.equals(r.getId(), requestId));
+
+                if (!confirmedHere) {
+                    throw new ConflictException("The participant limit has been reached");
+                }
+
+                saved.setStatus(RequestStatus.CONFIRMED);
+                requestRepository.saveAndFlush(saved);
+
+            } catch (feign.FeignException e) {
+                if (e.status() == 409) {
+                    throw new ConflictException("The participant limit has been reached");
+                }
+                throw e;
+            }
+        }
+
         return requestMapper.toDto(saved);
     }
 

@@ -53,7 +53,6 @@ public class ParticipationRequestService {
         if (requestRepository.existsByRequesterIdAndEventId(userId, eventId)) {
             throw new ConflictException("Participation request already exists");
         }
-        userClient.getUserById(userId);
 
         EventFullDto event = eventClient.findEventForInternalUse(eventId);
         if (event.getState() != EventState.PUBLISHED) {
@@ -155,12 +154,14 @@ public class ParticipationRequestService {
 
     @Transactional
     public ParticipationRequestDto cancelRequest(Long userId, Long requestId) {
-        userClient.getUserById(userId);
         ParticipationRequest r = requestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException("Request with id=" + requestId + " was not found"));
 
         if (!Objects.equals(r.getRequesterId(), userId)) {
             throw new ConflictException("User is not the requester");
+        }
+        if (r.getStatus() == RequestStatus.CONFIRMED) {
+            throw new ConflictException("Cannot cancel a confirmed request");
         }
         r.setStatus(RequestStatus.CANCELED);
         ParticipationRequest saved = requestRepository.saveAndFlush(r);

@@ -253,69 +253,7 @@ public class EventService {
         if (initiatorId == null || !initiatorId.equals(userId)) {
             throw new ConflictException("Only the initiator can change request statuses");
         }
-
-        List<ParticipationRequestDto> allForEvent = requestClient.getEventRequests(userId, eventId);
-        Map<Long, ParticipationRequestDto> byId =
-                allForEvent.stream().collect(java.util.stream.Collectors.toMap(
-                        ParticipationRequestDto::getId, java.util.function.Function.identity()));
-
-        List<Long> targetIds = body.getRequestIds();
-        if (!byId.keySet().containsAll(targetIds)) {
-            throw new ConflictException("All requestIds must belong to the event");
-        }
-
-        for (Long rid : targetIds) {
-            ParticipationRequestDto r = byId.get(rid);
-            if (r.getStatus() != RequestStatus.PENDING) {
-                throw new ConflictException("Request status can be changed only from PENDING");
-            }
-        }
-
-        Integer limitBoxed = event.getParticipantLimit();
-        int limit = (limitBoxed == null) ? 0 : limitBoxed;
-        boolean unlimited = (limit == 0);
-
-        Map<Long, Long> counts =
-                requestClient.countByEvent(java.util.Collections.singletonList(eventId), "CONFIRMED");
-        long alreadyConfirmed = counts.getOrDefault(eventId, 0L);
-
-
-        RequestStatus action = body.getStatus();
-        List<ParticipationRequestDto> confirmed = new java.util.ArrayList<>();
-        List<ParticipationRequestDto> rejected  = new java.util.ArrayList<>();
-
-        if (action == RequestStatus.REJECTED) {
-            rejected  = requestClient.bulkUpdateStatus(new BulkStatusUpdateRequest(eventId, targetIds, RequestStatus.REJECTED));
-
-        } else if (action == RequestStatus.CONFIRMED) {
-            if (!unlimited) {
-                long freeSlots = limit - alreadyConfirmed;
-                if (freeSlots <= 0 || targetIds.size() > freeSlots) {
-                    throw new ConflictException("The participant limit has been reached");
-                }
-            }
-
-            confirmed = requestClient.bulkUpdateStatus(new BulkStatusUpdateRequest(eventId, targetIds, RequestStatus.CONFIRMED));
-
-            if (!unlimited && (alreadyConfirmed + confirmed.size()) >= limit) {
-                List<Long> leftoversIds = allForEvent.stream()
-                        .filter(dto -> dto.getStatus() == RequestStatus.PENDING)
-                        .map(ParticipationRequestDto::getId)
-                        .filter(id -> !targetIds.contains(id))
-                        .collect(java.util.stream.Collectors.toList());
-
-                if (!leftoversIds.isEmpty()) {
-                    java.util.List<ParticipationRequestDto> rejectedLeftovers =
-                            requestClient.bulkUpdateStatus(
-                                    new BulkStatusUpdateRequest(eventId, leftoversIds, RequestStatus.REJECTED));
-                    rejected.addAll(rejectedLeftovers);
-                }
-            }
-
-        } else {
-            throw new ConflictException("Unsupported status action");
-        }
-        return new EventRequestStatusUpdateResult(confirmed, rejected);
+        return requestClient.updateEventRequests(userId, eventId, body);
     }
 
     @Transactional

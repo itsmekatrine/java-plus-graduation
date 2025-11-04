@@ -4,7 +4,6 @@ import feign.FeignException;
 import jakarta.validation.Valid;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.dto.request.BulkStatusUpdateRequest;
 import ru.practicum.dto.request.EventRequestStatusUpdateRequest;
 import ru.practicum.dto.request.EventRequestStatusUpdateResult;
 import ru.practicum.dto.request.ParticipationRequestDto;
@@ -26,13 +25,14 @@ public interface RequestClient {
     @GetMapping("/admin/requests/exists")
     boolean exists(@RequestParam("userId") Long userId, @RequestParam("eventId") Long eventId, @RequestParam("status") String status) throws FeignException;
 
-    @PostMapping("/admin/requests/bulk-status")
-    List<ParticipationRequestDto> bulkUpdateStatus(@RequestBody BulkStatusUpdateRequest body) throws FeignException;
-
     // OWNER
     @GetMapping("/users/{userId}/events/{eventId}/requests")
     List<ParticipationRequestDto> getEventRequests(@PathVariable Long userId,
                                                    @PathVariable Long eventId) throws FeignException;
+
+    @PatchMapping("/users/{userId}/events/{eventId}/requests")
+    EventRequestStatusUpdateResult updateEventRequests(@PathVariable Long userId, @PathVariable Long eventId,
+                                                       @RequestBody @Valid EventRequestStatusUpdateRequest body);
 
     // REQUESTER
     @GetMapping("/users/{userId}/requests")

@@ -30,10 +30,9 @@ public class ParticipationRequestInitiatorController {
     }
 
     @PatchMapping
-    public EventRequestStatusUpdateResult updateStatuses(
-            @PathVariable("userId") @Positive Long userId,
-            @PathVariable("eventId") @Positive Long eventId,
-            @RequestBody @Valid EventRequestStatusUpdateRequest body) {
+    public EventRequestStatusUpdateResult updateEventRequests(@PathVariable("userId") @Positive Long userId,
+                                                         @PathVariable("eventId") @Positive Long eventId,
+                                                         @RequestBody @Valid EventRequestStatusUpdateRequest body) {
         log.info("Update request statuses: userId={}, eventId={}, body={}", userId, eventId, body);
         return service.updateRequest(userId, eventId, body);
     }

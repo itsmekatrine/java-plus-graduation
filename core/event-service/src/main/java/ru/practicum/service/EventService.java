@@ -285,8 +285,7 @@ public class EventService {
         List<ParticipationRequestDto> rejected  = new java.util.ArrayList<>();
 
         if (action == RequestStatus.REJECTED) {
-            rejected = requestClient.bulkUpdateStatus(
-                    new BulkStatusUpdateRequest(eventId, targetIds, "REJECTED"));
+            rejected  = requestClient.bulkUpdateStatus(new BulkStatusUpdateRequest(eventId, targetIds, RequestStatus.REJECTED));
 
         } else if (action == RequestStatus.CONFIRMED) {
             if (!unlimited) {
@@ -296,8 +295,7 @@ public class EventService {
                 }
             }
 
-            confirmed = requestClient.bulkUpdateStatus(
-                    new BulkStatusUpdateRequest(eventId, targetIds, "CONFIRMED"));
+            confirmed = requestClient.bulkUpdateStatus(new BulkStatusUpdateRequest(eventId, targetIds, RequestStatus.CONFIRMED));
 
             if (!unlimited && (alreadyConfirmed + confirmed.size()) >= limit) {
                 List<Long> leftoversIds = allForEvent.stream()
@@ -309,7 +307,7 @@ public class EventService {
                 if (!leftoversIds.isEmpty()) {
                     java.util.List<ParticipationRequestDto> rejectedLeftovers =
                             requestClient.bulkUpdateStatus(
-                                    new BulkStatusUpdateRequest(eventId, leftoversIds, "REJECTED"));
+                                    new BulkStatusUpdateRequest(eventId, leftoversIds, RequestStatus.REJECTED));
                     rejected.addAll(rejectedLeftovers);
                 }
             }

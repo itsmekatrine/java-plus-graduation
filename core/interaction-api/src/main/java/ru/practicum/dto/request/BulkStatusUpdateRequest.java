@@ -12,5 +12,5 @@ import java.util.List;
 public class BulkStatusUpdateRequest {
     private Long eventId;
     private List<Long> requestIds;
-    private String status;
+    private RequestStatus status;
 }

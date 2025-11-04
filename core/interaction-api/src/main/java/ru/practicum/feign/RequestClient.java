@@ -26,7 +26,7 @@ public interface RequestClient {
     @GetMapping("/admin/requests/exists")
     boolean exists(@RequestParam("userId") Long userId, @RequestParam("eventId") Long eventId, @RequestParam("status") String status) throws FeignException;
 
-    @PatchMapping("/admin/requests/bulk-status")
+    @PostMapping("/admin/requests/bulk-status")
     List<ParticipationRequestDto> bulkUpdateStatus(@RequestBody BulkStatusUpdateRequest body) throws FeignException;
 
     // OWNER

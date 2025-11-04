@@ -54,12 +54,13 @@ public class AdminRequestController {
     }
 
     @PatchMapping("/bulk-status")
+    @PostMapping("/bulk-status")
     public List<ParticipationRequestDto> bulkStatus(@RequestBody BulkStatusUpdateRequest body) {
         List<ParticipationRequest> list = repo.findAllById(body.getRequestIds());
         boolean ok = list.stream().allMatch(r -> r.getEventId().equals(body.getEventId()));
         if (!ok) throw new ConflictException("All requestIds must belong to the event");
 
-        RequestStatus newStatus = RequestStatus.valueOf(body.getStatus()); // "CONFIRMED"/"REJECTED"
+        RequestStatus newStatus = body.getStatus();
         list.forEach(r -> r.setStatus(newStatus));
         repo.saveAll(list);
         return list.stream().map(mapper::toDto).toList();

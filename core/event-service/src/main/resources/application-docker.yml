@@ -19,3 +19,11 @@ eureka:
       defaultZone: http://discovery-server:8761/eureka/
   instance:
     preferIpAddress: true
+
+feign:
+  okhttp:
+    enabled: true
+  httpclient:
+    enabled: false
+  circuitbreaker:
+    enabled: true

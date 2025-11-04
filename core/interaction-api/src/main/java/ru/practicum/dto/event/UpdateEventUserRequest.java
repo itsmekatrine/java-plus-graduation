@@ -1,10 +1,12 @@
 package ru.practicum.dto.event;
 
-import lombok.AccessLevel;
-import lombok.Getter;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-@Getter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UpdateEventUserRequest extends UpdateEventRequest {
     UserEventAction stateAction;

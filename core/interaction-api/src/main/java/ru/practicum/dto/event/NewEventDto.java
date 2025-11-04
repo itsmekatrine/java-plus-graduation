@@ -1,13 +1,15 @@
 package ru.practicum.dto.event;
 
 import jakarta.validation.constraints.*;
-import lombok.AccessLevel;
-import lombok.Data;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class NewEventDto {
     @NotBlank

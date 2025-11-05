@@ -23,14 +23,14 @@ public class ParticipationRequestInitiatorController {
     private final ParticipationRequestService service;
 
     @GetMapping
-    public List<ParticipationRequestDto> list(@PathVariable @Positive Long userId,
+    public List<ParticipationRequestDto> getRequestsForEvent(@PathVariable @Positive Long userId,
                                               @PathVariable @Positive Long eventId) {
         log.info("List requests: userId={}, eventId={}", userId, eventId);
         return service.getRequestForEventByUserId(userId, eventId);
     }
 
     @PatchMapping
-    public EventRequestStatusUpdateResult updateEventRequests(@PathVariable("userId") @Positive Long userId,
+    public EventRequestStatusUpdateResult updateRequest(@PathVariable("userId") @Positive Long userId,
                                                          @PathVariable("eventId") @Positive Long eventId,
                                                          @RequestBody @Valid EventRequestStatusUpdateRequest body) {
         log.info("Update request statuses: userId={}, eventId={}, body={}", userId, eventId, body);

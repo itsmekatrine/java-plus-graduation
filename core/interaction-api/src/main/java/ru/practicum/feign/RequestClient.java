@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.request.EventRequestStatusUpdateRequest;
 import ru.practicum.dto.request.EventRequestStatusUpdateResult;
 import ru.practicum.dto.request.ParticipationRequestDto;
+import ru.practicum.dto.request.RequestStatus;
 
 import java.util.List;
 import java.util.Map;
@@ -20,10 +21,10 @@ public interface RequestClient {
 
     @GetMapping("/admin/requests/count-by-event")
     Map<Long, Long> countByEvent(@RequestParam("eventIds") List<Long> eventIds,
-                                 @RequestParam("status") String status) throws FeignException;
+                                 @RequestParam("status") RequestStatus status) throws FeignException;
 
     @GetMapping("/admin/requests/exists")
-    boolean exists(@RequestParam("userId") Long userId, @RequestParam("eventId") Long eventId, @RequestParam("status") String status) throws FeignException;
+    boolean exists(@RequestParam("userId") Long userId, @RequestParam("eventId") Long eventId, @RequestParam RequestStatus status) throws FeignException;
 
     // OWNER
     @GetMapping("/users/{userId}/events/{eventId}/requests")

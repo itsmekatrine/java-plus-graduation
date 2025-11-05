@@ -21,7 +21,7 @@ public class ParticipationRequestPrivateController {
     private final ParticipationRequestService requestService;
 
     @GetMapping
-    public List<ParticipationRequestDto> getRequests(@PathVariable @Positive Long userId) {
+    public List<ParticipationRequestDto> getRequestsByUser(@PathVariable @Positive Long userId) {
         return requestService.getRequestsByUser(userId);
     }
 

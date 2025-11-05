@@ -23,11 +23,10 @@ public class AdminRequestController {
     private final ParticipationRequestMapper mapper;
 
     @GetMapping("/count-by-event")
-    public Map<Long, Long> countByEvent(@RequestParam("eventIds") List<Long> eventIds,
-                                        @RequestParam("status") String status) {
+    public Map<Long, Long> countByEvent(@RequestParam List<Long> eventIds,
+                                        @RequestParam RequestStatus status) {
         if (eventIds == null || eventIds.isEmpty()) return Map.of();
-        RequestStatus st = RequestStatus.valueOf(status);
-        return repo.countByEventIdsAndStatus(eventIds, st).stream()
+        return repo.countByEventIdsAndStatus(eventIds, status).stream()
                 .collect(Collectors.toMap(
                         ParticipationRequestRepository.EventCountRow::getEventId,
                         ParticipationRequestRepository.EventCountRow::getCnt
@@ -47,7 +46,7 @@ public class AdminRequestController {
     @GetMapping("/exists")
     public boolean exists(@RequestParam("userId") Long userId,
                           @RequestParam("eventId") Long eventId,
-                          @RequestParam("status") String status) {
-        return repo.existsByRequesterIdAndEventIdAndStatus(userId, eventId, RequestStatus.valueOf(status));
+                          @RequestParam RequestStatus status) {
+        return repo.existsByRequesterIdAndEventIdAndStatus(userId, eventId, status);
     }
 }

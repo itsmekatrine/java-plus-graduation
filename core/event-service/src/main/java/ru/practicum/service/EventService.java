@@ -47,7 +47,7 @@ public class EventService {
         Map<Long, Long> views = getViews(eventIds);
         Map<Long, Long> confirmedRequests = eventIds.isEmpty()
                 ? Collections.emptyMap()
-                : requestClient.countByEvent(eventIds, "CONFIRMED");
+                : requestClient.countByEvent(eventIds, RequestStatus.CONFIRMED);
 
         return events.stream()
                 .map(event -> {
@@ -308,7 +308,7 @@ public class EventService {
 
     private Map<Long, Long> getConfirmedMap(List<Long> eventIds) {
         if (eventIds == null || eventIds.isEmpty()) return Collections.emptyMap();
-        Map<Long, Long> map = requestClient.countByEvent(eventIds, "CONFIRMED");
+        Map<Long, Long> map = requestClient.countByEvent(eventIds, RequestStatus.CONFIRMED);
         return map != null ? map : Collections.emptyMap();
     }
 }

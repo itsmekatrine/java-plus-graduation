@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.comment.*;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventState;
+import ru.practicum.dto.request.RequestStatus;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.feign.EventClient;
 import ru.practicum.model.Comment;
@@ -56,7 +57,7 @@ public class CommentService {
 
         comment = commentRepository.save(comment);
 
-        boolean isAuthorParticipant = requestClient.exists(userId, eventId, "CONFIRMED");
+        boolean isAuthorParticipant = requestClient.exists(userId, eventId, RequestStatus.CONFIRMED);
 
         CommentDto response = mapper.toDto(comment);
         response.setIsAuthorParticipant(isAuthorParticipant);
@@ -102,7 +103,7 @@ public class CommentService {
 
         comment = commentRepository.saveAndFlush(comment);
 
-        boolean isAuthorParticipant = requestClient.exists(userId, eventId, "CONFIRMED");
+        boolean isAuthorParticipant = requestClient.exists(userId, eventId, RequestStatus.CONFIRMED);
 
         CommentDto response = mapper.toDto(comment);
         response.setIsAuthorParticipant(isAuthorParticipant);

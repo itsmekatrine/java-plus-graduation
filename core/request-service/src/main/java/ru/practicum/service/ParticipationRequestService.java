@@ -25,7 +25,6 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ParticipationRequestService {
 
     private final ParticipationRequestRepository requestRepository;
@@ -48,7 +47,6 @@ public class ParticipationRequestService {
                 .toList();
     }
 
-    @Transactional
     public ParticipationRequestDto createRequest(Long userId, Long eventId) {
         if (requestRepository.existsByRequesterIdAndEventId(userId, eventId)) {
             throw new ConflictException("Participation request already exists");
@@ -86,7 +84,6 @@ public class ParticipationRequestService {
         return requestMapper.toDto(saved);
     }
 
-    @Transactional
     public EventRequestStatusUpdateResult updateRequest(Long userId, Long eventId,
                                                          EventRequestStatusUpdateRequest updateRequest) {
         EventFullDto event = eventClient.getByUserIdAndEventId(userId, eventId);

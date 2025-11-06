@@ -18,19 +18,20 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class CompilationService {
 
     private final CompilationRepository compilationRepository;
     private final CompilationMapper compilationMapper;
     private final EventRepository eventRepository;
 
+    @Transactional(readOnly = true)
     public List<CompilationDto> getAllCompilations(Pageable pageable) {
         return compilationRepository.findAll(pageable).stream()
                 .map(compilationMapper::toDto)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public CompilationDto getCompilationById(Long compId) {
         return compilationRepository.findById(compId)
                 .map(compilationMapper::toDto)

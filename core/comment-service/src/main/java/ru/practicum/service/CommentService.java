@@ -24,7 +24,6 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class CommentService {
 
     private final UserClient userClient;
@@ -33,7 +32,6 @@ public class CommentService {
     private final CommentMapper mapper;
     private final RequestClient requestClient;
 
-    @Transactional
     public CommentDto addComment(Long userId, Long eventId, CreateUpdateCommentDto dto) {
         EventFullDto event = eventClient.findEventById(eventId);
 
@@ -64,8 +62,6 @@ public class CommentService {
         return response;
     }
 
-
-    @Transactional
     public void addPreModeration(Long userId, Long eventId, PreModerationRequest preModerationDto) {
         EventFullDto event = eventClient.getByUserIdAndEventId(userId, eventId);
         Long initiatorId = event.getInitiator() != null ? event.getInitiator().getId() : null;
@@ -80,7 +76,6 @@ public class CommentService {
         eventClient.appendForbiddenWords(eventId, preModerationDto);
     }
 
-    @Transactional
     public CommentDto updateComment(Long userId, Long eventId, Long commentId, CreateUpdateCommentDto dto) {
         EventFullDto event = eventClient.getByUserIdAndEventId(userId, eventId);
 
@@ -110,6 +105,7 @@ public class CommentService {
         return response;
     }
 
+    @Transactional(readOnly = true)
     public List<CommentWithUserDto> getCommentsByEventId(Long eventId, Pageable pageable) {
         return commentRepository.findByEventId(eventId, pageable)
                 .stream()
@@ -117,6 +113,7 @@ public class CommentService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<CommentWithEventDto> getUsersComments(Long userId, Pageable pageable) {
         return commentRepository.findByAuthorId(userId, pageable)
                 .stream()

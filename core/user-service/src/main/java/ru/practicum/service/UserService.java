@@ -17,7 +17,6 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @Service
-@Transactional(readOnly = true)
 public class UserService {
 
     private final UserRepository userRepository;
@@ -48,6 +47,7 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " was not found"));
     }
 
+    @Transactional(readOnly = true)
     public List<UserDto> getUsers(UserAdminSearchParam params) {
         Page<User> users;
         if (params.getIds() != null) {

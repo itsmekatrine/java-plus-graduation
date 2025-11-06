@@ -17,7 +17,6 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
@@ -58,12 +57,14 @@ public class CategoryService {
         return mapper.toDto(category);
     }
 
+    @Transactional(readOnly = true)
     public List<CategoryDto> getAllCategories(Pageable pageable) {
         return categoryRepository.findAll(pageable).stream()
                 .map(mapper::toDto)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public CategoryDto getCategoryById(Long id) {
         return categoryRepository.findById(id)
                 .map(mapper::toDto)

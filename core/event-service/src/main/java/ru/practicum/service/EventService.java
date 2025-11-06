@@ -3,7 +3,6 @@ package ru.practicum.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.request.*;
 import ru.practicum.dto.stats.StatsDto;
@@ -32,7 +31,6 @@ import static ru.practicum.specification.EventSpecifications.eventPublicSearchPa
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class EventService {
 
     private final EventRepository eventRepository;
@@ -152,7 +150,6 @@ public class EventService {
         return dto;
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public EventFullDto updateEventByUser(Long eventId, Long userId, UpdateEventUserRequest event) {
         Event eventToUpdate = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Событие не найдено id=" + eventId));
@@ -203,7 +200,6 @@ public class EventService {
                 .collect(toList());
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public EventFullDto updateEventByAdmin(Long eventId, UpdateEventAdminRequest updateRequest) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event id=" + eventId + " not found"));

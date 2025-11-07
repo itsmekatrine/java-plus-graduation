@@ -3,7 +3,7 @@ package ru.practicum.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
-import ru.practicum.dto.HitDto;
+import ru.practicum.dto.stats.HitDto;
 import ru.practicum.entity.Hit;
 
 import java.time.LocalDateTime;

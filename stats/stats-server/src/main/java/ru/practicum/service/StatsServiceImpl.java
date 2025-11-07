@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.dto.HitDto;
-import ru.practicum.dto.StatsDto;
+import ru.practicum.dto.stats.HitDto;
+import ru.practicum.dto.stats.StatsDto;
 import ru.practicum.entity.Hit;
 import ru.practicum.mapper.HitMapper;
 import ru.practicum.repository.HitRepository;
@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Transactional
 public class StatsServiceImpl implements StatsService {
 
     private final HitRepository hitRepository;
@@ -27,6 +26,7 @@ public class StatsServiceImpl implements StatsService {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
+    @Transactional
     public void saveHit(HitDto hitDto) {
         log.info("Saving hit: {}", hitDto);
         Hit hit = hitMapper.toEntity(hitDto);
@@ -54,9 +54,9 @@ public class StatsServiceImpl implements StatsService {
             }
         }
 
-        return rows.stream().map(row -> new StatsDto((String) row[0],    // app
-                (String) row[1],    // uri
-                ((Number) row[2]).longValue() // hits
+        return rows.stream().map(row -> new StatsDto((String) row[0],
+                (String) row[1],
+                ((Number) row[2]).longValue()
         )).collect(Collectors.toList());
     }
 }

@@ -12,13 +12,7 @@
 
     <name>stats</name>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-
     <modules>
-        <module>stats-dto</module>
         <module>stats-server</module>
-        <module>stats-client</module>
     </modules>
 </project>

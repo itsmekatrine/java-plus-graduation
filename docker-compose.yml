@@ -1,26 +1,207 @@
 services:
+  discovery-server:
+    image: discovery-server
+    container_name: discovery-server
+    build:
+      context: infra/discovery-server
+      dockerfile: Dockerfile
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8761/actuator/health || exit 1
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+
+  config-server:
+    image: config-server
+    container_name: config-server
+    build:
+      context: infra/config-server
+      dockerfile: Dockerfile
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker,native
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=config-server
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://discovery-server:8761/eureka/apps/CONFIG-SERVER || exit 1
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+
+  gateway-server:
+    image: gateway-server
+    container_name: gateway-server
+    build:
+      context: infra/gateway-server
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+
   stats-server:
     build:
-      context: .
-      dockerfile: stats/stats-server/Dockerfile
+      context: stats/stats-server
+      dockerfile: Dockerfile
     image: stats-server
     container_name: stats-server
     ports:
       - "9090:9090"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID=config-server
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/stats-db
+      - SPRING_DATASOURCE_USERNAME=sdb
+      - SPRING_DATASOURCE_PASSWORD=password
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:9090/actuator/health || exit 1
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
     depends_on:
-      - stats-db
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      stats-db:
+        condition: service_healthy
 
-  ewm-service:
+  user-service:
     build:
-      context: .
-      dockerfile: core/main-service/Dockerfile
-    image: ewm-service
-    container_name: ewm-service
-    ports:
-      - "8080:8080"
+      context: core/user-service
+      dockerfile: Dockerfile
+    image: user-service
+    container_name: user-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID=config-server
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/user-db
+      - SPRING_DATASOURCE_USERNAME=udb
+      - SPRING_DATASOURCE_PASSWORD=password
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://discovery-server:8761/eureka/apps/USER-SERVICE || exit 1
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
     depends_on:
-      - ewm-db
-      - stats-server
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      gateway-server:
+        condition: service_healthy
+      user-db:
+        condition: service_healthy
+
+  event-service:
+    build:
+      context: core/event-service
+      dockerfile: Dockerfile
+    image: event-service
+    container_name: event-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_CONFIG_PROFILE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID=config-server
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://event-db:5432/event-db
+      - SPRING_DATASOURCE_USERNAME=edb
+      - SPRING_DATASOURCE_PASSWORD=password
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://discovery-server:8761/eureka/apps/EVENT-SERVICE || exit 1
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      gateway-server:
+        condition: service_healthy
+      event-db:
+        condition: service_healthy
+
+  request-service:
+    build:
+      context: core/request-service
+      dockerfile: Dockerfile
+    image: request-service
+    container_name: request-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID=config-server
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://request-db:5432/request-db
+      - SPRING_DATASOURCE_USERNAME=rdb
+      - SPRING_DATASOURCE_PASSWORD=password
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://discovery-server:8761/eureka/apps/REQUEST-SERVICE || exit 1
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      gateway-server:
+        condition: service_healthy
+      request-db:
+        condition: service_healthy
+
+  comment-service:
+    build:
+      context: core/comment-service
+      dockerfile: Dockerfile
+    image: comment-service
+    container_name: comment-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID=config-server
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://comment-db:5432/comment-db
+      - SPRING_DATASOURCE_USERNAME=cdb
+      - SPRING_DATASOURCE_PASSWORD=password
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://discovery-server:8761/eureka/apps/COMMENT-SERVICE || exit 1
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      gateway-server:
+        condition: service_healthy
+      comment-db:
+        condition: service_healthy
 
   stats-db:
     image: postgres:16.1
@@ -39,17 +220,68 @@ services:
       interval: 5s
       retries: 10
 
-  ewm-db:
+  event-db:
     image: postgres:16.1
-    container_name: ewm-db
+    container_name: event-db
     ports:
       - "6542:5432"
     environment:
-      - POSTGRES_DB=ewm-db
-      - POSTGRES_USER=ewm
+      - POSTGRES_DB=event-db
+      - POSTGRES_USER=edb
       - POSTGRES_PASSWORD=password
     volumes:
-      - ./volumes/postgres/ewm_data:/var/lib/postgresql/data/
+      - ./volumes/postgres/event_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+  user-db:
+    image: postgres:16.1
+    container_name: user-db
+    ports:
+      - "6544:5432"
+    environment:
+      - POSTGRES_DB=user-db
+      - POSTGRES_USER=udb
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - ./volumes/postgres/user_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+  request-db:
+    image: postgres:16.1
+    container_name: request-db
+    ports:
+      - "6545:5432"
+    environment:
+      - POSTGRES_DB=request-db
+      - POSTGRES_USER=rdb
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - ./volumes/postgres/request_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+  comment-db:
+    image: postgres:16.1
+    container_name: comment-db
+    ports:
+      - "6546:5432"
+    environment:
+      - POSTGRES_DB=comment-db
+      - POSTGRES_USER=cdb
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - ./volumes/postgres/comment_data:/var/lib/postgresql/data/
     healthcheck:
       test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
       timeout: 5s

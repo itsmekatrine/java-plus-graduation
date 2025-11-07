@@ -14,7 +14,7 @@ public interface UserClient {
     @GetMapping("/admin/users")
     List<UserDto> getUsers(@RequestParam(required = false, name = "ids") List<Long> ids,
                            @RequestParam(defaultValue = "0",  name = "from") Integer from,
-                           @RequestParam(defaultValue = "1000", name = "size") Integer size) throws FeignException;;
+                           @RequestParam(defaultValue = "1000", name = "size") Integer size) throws FeignException;
 
     default UserDto getUserById(Long userId) {
         List<UserDto> res = getUsers(List.of(userId), 0, 1);

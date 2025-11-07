@@ -18,11 +18,11 @@ import java.util.List;
 public interface StatsClient {
 
     @PostMapping("/hit")
-    void postHit(@Valid @RequestBody HitDto hitRequest) throws FeignException;;
+    void postHit(@Valid @RequestBody HitDto hitRequest) throws FeignException;
 
     @GetMapping("/stats")
     List<StatsDto> getStats(@RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
                                 @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
                                 @RequestParam(required = false) List<String> uris,
-                                @RequestParam(defaultValue = "false") boolean unique) throws FeignException;;
+                                @RequestParam(defaultValue = "false") boolean unique) throws FeignException;
 }

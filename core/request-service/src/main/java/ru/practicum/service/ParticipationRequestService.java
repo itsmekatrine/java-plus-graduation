@@ -3,11 +3,13 @@ package ru.practicum.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.CollectorClient;
 import ru.practicum.dto.event.EventFullDto;
 import ru.practicum.dto.event.EventState;
 import ru.practicum.dto.request.EventRequestStatusUpdateRequest;
 import ru.practicum.dto.request.EventRequestStatusUpdateResult;
 import ru.practicum.dto.request.RequestStatus;
+import ru.practicum.ewm.stats.proto.ActionTypeProto;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.feign.EventClient;
@@ -31,6 +33,7 @@ public class ParticipationRequestService {
     private final UserClient userClient;
     private final EventClient eventClient;
     private final ParticipationRequestMapper requestMapper;
+    private final CollectorClient collectorClient;
 
     public List<ParticipationRequestDto> getRequestForEventByUserId(Long userId, Long eventId) {
         EventFullDto event = eventClient.getByUserIdAndEventId(userId, eventId);
@@ -80,8 +83,8 @@ public class ParticipationRequestService {
                 .status(autoConfirm ? RequestStatus.CONFIRMED : RequestStatus.PENDING)
                 .build();
 
-        ParticipationRequest saved = requestRepository.saveAndFlush(request);
-        return requestMapper.toDto(saved);
+        collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_REGISTER);
+        return requestMapper.toDto(requestRepository.save(request));
     }
 
     public EventRequestStatusUpdateResult updateRequest(Long userId, Long eventId,

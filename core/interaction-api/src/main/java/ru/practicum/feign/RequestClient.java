@@ -26,6 +26,9 @@ public interface RequestClient {
     @GetMapping("/admin/requests/exists")
     boolean exists(@RequestParam("userId") Long userId, @RequestParam("eventId") Long eventId, @RequestParam RequestStatus status) throws FeignException;
 
+    @GetMapping("/{userId}/{eventId}")
+    boolean isUserInEvent(@PathVariable Long userId, @PathVariable Long eventId) throws FeignException;
+
     // OWNER
     @GetMapping("/users/{userId}/events/{eventId}/requests")
     List<ParticipationRequestDto> getEventRequests(@PathVariable Long userId,

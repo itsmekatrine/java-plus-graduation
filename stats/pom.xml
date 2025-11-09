@@ -15,5 +15,6 @@
     <modules>
         <module>serialization</module>
         <module>collector</module>
+        <module>stats-client</module>
     </modules>
 </project>

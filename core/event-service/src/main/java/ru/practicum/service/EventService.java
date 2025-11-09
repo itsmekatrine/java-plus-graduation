@@ -4,13 +4,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.CollectorClient;
+import ru.practicum.RecommendationsClient;
 import ru.practicum.dto.request.*;
 import ru.practicum.dto.stats.StatsDto;
 import ru.practicum.dto.event.*;
 import ru.practicum.entity.Category;
 import ru.practicum.entity.Event;
 import ru.practicum.entity.EventState;
+import ru.practicum.ewm.stats.proto.ActionTypeProto;
+import ru.practicum.ewm.stats.proto.RecommendedEventProto;
 import ru.practicum.exception.ConflictException;
+import ru.practicum.exception.ForbiddenException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.feign.RequestClient;
 import ru.practicum.feign.StatsClient;
@@ -37,6 +42,9 @@ public class EventService {
     private final StatsClient statsClient;
     private final EventMapper eventMapper;
     private final RequestClient requestClient;
+    private final CollectorClient collectorClient;
+    private final RecommendationsClient recommendationsClient;
+    static final int MAX_RECOMMENDATION_RESULTS = 10;
 
     public List<EventShortDto> getUsersEvents(EventUserSearchParam params) {
         Page<Event> events = eventRepository.findByInitiatorId(params.getUserId(), params.getPageable());
@@ -263,6 +271,38 @@ public class EventService {
             e.getForbiddenWords().addAll(words);
         }
         eventRepository.save(e);
+    }
+
+    public EventFullDto getEventByIdPublic(Long eventId, Long userId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event id=" + eventId + " not found"));
+
+        if (event.getState() != EventState.PUBLISHED) {
+            throw new ConflictException("Event must be published");
+        }
+
+        collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_VIEW);
+        return eventMapper.toFullDto(event);
+    }
+
+    public List<EventFullDto> getRecommendations(Long userId) {
+        Set<Long> eventIds = recommendationsClient.getRecommendationsForUser(userId, MAX_RECOMMENDATION_RESULTS)
+                .map(RecommendedEventProto::getEventId).collect(Collectors.toSet());
+
+        return eventRepository
+                .findAllByIdIn(eventIds)
+                .stream()
+                .map(eventMapper::toFullDto)
+                .toList();
+    }
+
+    public void likeEvent(Long userId, Long eventId) {
+        if (!requestClient.isUserInEvent(userId, eventId)) {
+            throw new ForbiddenException(
+                    "Only participants can like events (userId=%d, eventId=%d)".formatted(userId, eventId)
+            );
+        }
+        collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_LIKE);
     }
 
     private void updateNouNullFields(Event eventToUpdate, UpdateEventRequest event) {

@@ -241,6 +241,58 @@ services:
       kafka:
         condition: service_healthy
 
+  analyzer:
+    image: analyzer
+    container_name: analyzer
+    build:
+      context: stats/analyzer
+      dockerfile: Dockerfile
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_DISCOVERY_SERVICEID=config-server
+
+      - APP_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://analyzer-db:5432/analyzer-db
+      - SPRING_DATASOURCE_USERNAME=adb
+      - SPRING_DATASOURCE_PASSWORD=password
+
+      - APP_KAFKA_CONSUMER_USERACTION_TOPICS_0=stats.user-actions.v1
+      - APP_KAFKA_CONSUMER_USERACTION_POLL_TIMEOUT=1s
+      - APP_KAFKA_CONSUMER_USERACTION_PROPERTIES_BOOTSTRAP_SERVERS=kafka:29092
+      - APP_KAFKA_CONSUMER_USERACTION_PROPERTIES_GROUP_ID=analyzer-user-actions
+      - APP_KAFKA_CONSUMER_USERACTION_PROPERTIES_ENABLE_AUTO_COMMIT=false
+      - APP_KAFKA_CONSUMER_USERACTION_PROPERTIES_AUTO_OFFSET_RESET=earliest
+      - APP_KAFKA_CONSUMER_USERACTION_PROPERTIES_KEY_DESERIALIZER=org.apache.kafka.common.serialization.LongDeserializer
+      - APP_KAFKA_CONSUMER_USERACTION_PROPERTIES_VALUE_DESERIALIZER=ru.practicum.deserialization.UserActionDeserializer
+      - APP_KAFKA_CONSUMER_USERACTION_PROPERTIES_AVRO_VALUE_TYPE=ru.practicum.ewm.stats.avro.UserActionAvro
+
+      - APP_KAFKA_CONSUMER_SIMILARITY_TOPICS_0=stats.events-similarity.v1
+      - APP_KAFKA_CONSUMER_SIMILARITY_POLL_TIMEOUT=1s
+      - APP_KAFKA_CONSUMER_SIMILARITY_PROPERTIES_BOOTSTRAP_SERVERS=kafka:29092
+      - APP_KAFKA_CONSUMER_SIMILARITY_PROPERTIES_GROUP_ID=analyzer-similarity
+      - APP_KAFKA_CONSUMER_SIMILARITY_PROPERTIES_ENABLE_AUTO_COMMIT=false
+      - APP_KAFKA_CONSUMER_SIMILARITY_PROPERTIES_AUTO_OFFSET_RESET=earliest
+      - APP_KAFKA_CONSUMER_SIMILARITY_PROPERTIES_KEY_DESERIALIZER=org.apache.kafka.common.serialization.StringDeserializer
+      - APP_KAFKA_CONSUMER_SIMILARITY_PROPERTIES_VALUE_DESERIALIZER=ru.practicum.deserialization.EventSimilarityDeserializer
+      - APP_KAFKA_CONSUMER_SIMILARITY_PROPERTIES_AVRO_VALUE_TYPE=ru.practicum.ewm.stats.avro.EventSimilarityAvro
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://discovery-server:8761/eureka/apps/ANALYZER || exit 1
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      analyzer-db:
+        condition: service_healthy
+
   event-db:
     image: postgres:16.1
     container_name: event-db
@@ -303,6 +355,23 @@ services:
       - POSTGRES_PASSWORD=password
     volumes:
       - ./volumes/postgres/comment_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+  analyzer-db:
+    image: postgres:16.1
+    container_name: analyzer-db
+    ports:
+      - "6547:5432"
+    environment:
+      - POSTGRES_DB=analyzer-db
+      - POSTGRES_USER=adb
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - ./volumes/postgres/analyzer-data:/var/lib/postgresql/data/
     healthcheck:
       test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
       timeout: 5s

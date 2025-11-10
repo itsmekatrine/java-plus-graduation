@@ -1,4 +1,4 @@
-package ru.practicum.config;
+package ru.practicum.kafka;
 
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.springframework.stereotype.Component;

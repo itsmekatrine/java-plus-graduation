@@ -1,47 +1,44 @@
-package ru.practicum;
+package ru.practicum.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.errors.WakeupException;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-import ru.practicum.kafka.AggregatorKafkaConsumer;
-import ru.practicum.kafka.AggregatorKafkaProducer;
-import ru.practicum.kafka.AggregatorKafkaConfig;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
-import ru.practicum.service.UserActionService;
+import ru.practicum.handler.UserActionHandler;
 
 import java.time.Duration;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class AggregatorStarter implements CommandLineRunner {
-    private final AggregatorKafkaConfig kafkaConfig;
-    private final AggregatorKafkaProducer producer;
-    private final AggregatorKafkaConsumer consumer;
-    private final UserActionService userActionService;
+public class UserActionListener implements Runnable {
+    private final UserActionConsumer consumer;
+    private final AnalyzerKafkaConfig kafkaConfig;
+    private final UserActionHandler userActionHandler;
 
     @Override
-    public void run(String... args) {
+    public void run() {
         try {
             Runtime.getRuntime().addShutdownHook(new Thread(consumer::wakeup));
-            consumer.subscribe(kafkaConfig.getConsumer().getTopics());
-            Duration pollTimeout = kafkaConfig.getConsumer().getPollTimeout();
+            consumer.subscribe(kafkaConfig.getConsumer().getUserAction().getTopics());
+            Duration pollTimeout = kafkaConfig.getConsumer().getUserAction().getPollTimeout();
 
             while (true) {
                 ConsumerRecords<Long, UserActionAvro> records = consumer.poll(pollTimeout);
+
                 if (!records.isEmpty()) {
                     log.info("Received {} records: {}", records.count(), records);
+
                     for (ConsumerRecord<Long, UserActionAvro> record : records) {
-                        UserActionAvro action = record.value();
-                        log.info("User action handling: {}", action);
-                        userActionService.handle(action)
-                                .forEach(producer::send);
+                        UserActionAvro userActionAvro = record.value();
+                        log.info("User action handling: {}", userActionAvro);
+                        userActionHandler.handle(userActionAvro);
                         log.info("User action handled");
                     }
+
                     consumer.commitAsync();
                     log.info("Offset committed");
                 }
@@ -52,7 +49,6 @@ public class AggregatorStarter implements CommandLineRunner {
             log.error("User action handling error", e);
         } finally {
             try {
-                producer.flush();
                 consumer.commitAsync();
                 log.info("Refreshed");
             } catch (Exception e) {
@@ -60,9 +56,8 @@ public class AggregatorStarter implements CommandLineRunner {
             } finally {
                 consumer.close();
                 log.info("Consumer closed");
-                producer.close();
-                log.info("Producer closed");
             }
         }
     }
 }
+

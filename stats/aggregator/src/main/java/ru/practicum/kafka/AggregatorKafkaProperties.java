@@ -1,4 +1,4 @@
-package ru.practicum.config;
+package ru.practicum.kafka;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

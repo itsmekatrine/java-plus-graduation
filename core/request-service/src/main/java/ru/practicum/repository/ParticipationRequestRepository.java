@@ -20,7 +20,9 @@ public interface ParticipationRequestRepository extends JpaRepository<Participat
                                                  @Param("status") RequestStatus status);
 
     interface EventCountRow {
+
         Long getEventId();
+
         Long getCnt();
     }
 

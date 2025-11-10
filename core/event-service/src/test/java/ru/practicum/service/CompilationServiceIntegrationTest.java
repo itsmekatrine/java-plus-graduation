@@ -13,8 +13,6 @@ import ru.practicum.entity.Compilation;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.repository.CompilationRepository;
 
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 

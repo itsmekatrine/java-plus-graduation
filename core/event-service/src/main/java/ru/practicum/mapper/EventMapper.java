@@ -13,12 +13,12 @@ import ru.practicum.entity.Event;
 @Mapper(componentModel = "spring", imports = {java.time.LocalDateTime.class})
 public interface EventMapper {
 
-    @Mapping(target = "views", ignore = true)
+    @Mapping(target = "rating", ignore = true)
     @Mapping(target = "confirmedRequests", ignore = true)
     @Mapping(target = "initiator", expression = "java(toUserShortDto(event.getInitiatorId()))")
     EventShortDto toShortDto(Event event);
 
-    @Mapping(target = "views", ignore = true)
+    @Mapping(target = "rating", ignore = true)
     @Mapping(target = "confirmedRequests", ignore = true)
     @Mapping(target = "location.lat", source = "lat")
     @Mapping(target = "location.lon", source = "lon")
@@ -30,7 +30,6 @@ public interface EventMapper {
     @Mapping(target = "initiatorId", source = "userId")
     @Mapping(target = "category", source = "dto.category", qualifiedByName = "idToCategory")
     @Mapping(target = "state", expression = "java(ru.practicum.entity.EventState.PENDING)")
-
     @Mapping(target = "paid", expression = "java(Boolean.TRUE.equals(dto.getPaid()))")
     @Mapping(target = "participantLimit", expression = "java(dto.getParticipantLimit() != null ? dto.getParticipantLimit() : 0)")
     @Mapping(target = "requestModeration", expression = "java(dto.getRequestModeration() == null ? Boolean.TRUE : dto.getRequestModeration())")

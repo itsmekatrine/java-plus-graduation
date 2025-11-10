@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.stats.HitDto;
@@ -32,7 +33,6 @@ public class EventController {
 
     private final EventService eventService;
     private final CommentClient commentClient;
-    private final StatsClient statsClient;
 
     @GetMapping
     public List<EventShortDto> getEvents(
@@ -57,13 +57,6 @@ public class EventController {
                 text, categories, paid, rangeStart, rangeEnd, sort, from, size,
                 request.getRemoteAddr(), request.getRequestURI(), timestamp);
 
-        statsClient.postHit(HitDto.builder()
-                .app("event-service")
-                .uri(request.getRequestURI())
-                .ip(request.getRemoteAddr())
-                .timestamp(timestamp)
-                .build());
-
         PublicSearchParam param = PublicSearchParam.builder()
                 .text(text)
                 .categories(categories)
@@ -77,26 +70,14 @@ public class EventController {
                 .build();
 
         List<EventShortDto> events = eventService.searchEvents(param);
-
         log.info("Returned {} events for GET /events", events.size());
         return events;
     }
 
     @GetMapping("/{id}")
-    public EventFullDto getEventById(@PathVariable Long id, HttpServletRequest request) {
+    public EventFullDto getEventById(@PathVariable Long id, @RequestHeader("X-EWM-USER-ID") long userId) {
 
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-
-        log.info("GET /events/{}: ip={}, uri={}, ts={}", id, request.getRemoteAddr(), request.getRequestURI(), timestamp);
-
-        statsClient.postHit(HitDto.builder()
-                .app("event-service")
-                .uri(request.getRequestURI())
-                .ip(request.getRemoteAddr())
-                .timestamp(timestamp)
-                .build());
-
-        EventFullDto event = eventService.getEventById(id);
+        EventFullDto event = eventService.getEventByIdPublic(id, userId);
         log.info("Returned event {} for GET /events/{}", event.getId(), id);
         return event;
     }
@@ -105,9 +86,19 @@ public class EventController {
     public List<CommentWithUserDto> getCommentsByEventId(@PathVariable @Positive Long eventId,
                                                          @RequestParam(defaultValue = "0") Integer from,
                                                          @RequestParam(defaultValue = "10") Integer size) {
-        PageableSearchParam param = PageableSearchParam.builder().size(size).from(from).build();
         log.info("Returned comments to event id={}", eventId);
-
         return commentClient.getCommentsByEventId(eventId, from, size);
+    }
+
+    @GetMapping("/recommendations")
+    public List<EventFullDto> getRecommendations(@RequestHeader("X-EWM-USER-ID") Long userId) {
+        log.info("Get recommendations for user with id: {}", userId);
+        return eventService.getRecommendations(userId);
+    }
+
+    @PutMapping("{eventId}/like")
+    public void likeEvent(@RequestHeader("X-EWM-USER-ID") Long userId, @PathVariable Long eventId) {
+        log.info("Like event with id: {} for user with id: {}", eventId, userId);
+        eventService.likeEvent(userId, eventId);
     }
 }

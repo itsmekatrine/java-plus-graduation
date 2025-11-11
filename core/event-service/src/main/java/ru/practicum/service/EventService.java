@@ -50,20 +50,19 @@ public class EventService {
 
         List<Long> eventIds = events.stream().map(Event::getId).toList();
         Map<Long, Double> ratings = getRatings(eventIds);
-        Map<Long, Long> confirmedRequests = eventIds.isEmpty()
-                ? Collections.emptyMap()
-                : requestClient.countByEvent(eventIds, RequestStatus.CONFIRMED);
+        Map<Long, Long> confirmed = getConfirmedMap(eventIds);
 
         return events.stream()
-                .map(event -> {
-                    EventShortDto dto = eventMapper.toShortDto(event);
-                    final Long eventId = event.getId();
-                    dto.setRating(ratings.getOrDefault(eventId, 0.0));
-                    dto.setConfirmedRequests(confirmedRequests.getOrDefault(eventId, 0L));
+                .map(ev -> {
+                    Long id = ev.getId();
+                    EventShortDto dto = eventMapper.toShortDto(ev);
+                    Double r = ratings.get(id);
+                    if (r == null || !Double.isFinite(r)) r = 0.0;
+                    dto.setRating(r);
+                    dto.setConfirmedRequests(confirmed.getOrDefault(id, 0L));
                     return dto;
                 })
                 .toList();
-
     }
 
     @Transactional
@@ -165,7 +164,7 @@ public class EventService {
             throw new ConflictException("Событие добавлено не текущим пользователем или уже было опубликовано");
         }
 
-        updateNouNullFields(eventToUpdate, event);
+        updateNonNullFields(eventToUpdate, event);
         if (event.getStateAction() == UserEventAction.CANCEL_REVIEW) {
             eventToUpdate.setState(EventState.CANCELED);
         } else if (event.getStateAction() == UserEventAction.SEND_TO_REVIEW) {
@@ -211,9 +210,9 @@ public class EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event id=" + eventId + " not found"));
 
-        AdminEventAction action = updateRequest.getStateAction();
+        updateNonNullFields(event, updateRequest);
 
-        updateNouNullFields(event, updateRequest);
+        AdminEventAction action = updateRequest.getStateAction();
 
         if (action == AdminEventAction.PUBLISH_EVENT) {
             if (event.getState() != EventState.PENDING) {
@@ -224,7 +223,6 @@ public class EventService {
             if (start == null || !start.isAfter(now.plusHours(1))) {
                 throw new ConflictException("Event date must be at least 1 hour after publish time");
             }
-
             event.setState(EventState.PUBLISHED);
             event.setPublishedOn(now);
 
@@ -232,7 +230,6 @@ public class EventService {
             if (event.getState() == EventState.PUBLISHED) {
                 throw new ConflictException("Cannot reject the event because it's already PUBLISHED");
             }
-
             event.setState(EventState.CANCELED);
             event.setPublishedOn(null);
         }
@@ -243,8 +240,12 @@ public class EventService {
         Long id = saved.getId();
         Map<Long, Double> ratings  = getRatings(List.of(eventId));
         Map<Long, Long> confirmed = getConfirmedMap(List.of(id));
-        dto.setRating(ratings.getOrDefault(eventId, 0.0));
+
+        Double r = ratings.get(id);
+        if (r == null || !Double.isFinite(r)) r = 0.0;
+        dto.setRating(r);
         dto.setConfirmedRequests(confirmed.getOrDefault(id, 0L));
+
         return dto;
     }
 
@@ -324,7 +325,7 @@ public class EventService {
         collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_LIKE);
     }
 
-    private void updateNouNullFields(Event eventToUpdate, UpdateEventRequest event) {
+    private void updateNonNullFields(Event eventToUpdate, UpdateEventRequest event) {
         if (event.getAnnotation() != null) eventToUpdate.setAnnotation(event.getAnnotation());
         if (event.getCategory() != null) eventToUpdate.setCategory(Category.builder().id(event.getCategory()).build());
         if (event.getDescription() != null) eventToUpdate.setDescription(event.getDescription());
@@ -341,8 +342,14 @@ public class EventService {
 
     private Map<Long, Long> getConfirmedMap(List<Long> eventIds) {
         if (eventIds == null || eventIds.isEmpty()) return Collections.emptyMap();
-        Map<Long, Long> map = requestClient.countByEvent(eventIds, RequestStatus.CONFIRMED);
-        return map != null ? map : Collections.emptyMap();
+        try {
+            Map<Long, Long> map = requestClient.countByEvent(eventIds, RequestStatus.CONFIRMED);
+            return (map != null) ? map : Collections.emptyMap();
+        } catch (feign.FeignException ex) {
+            return Collections.emptyMap();
+        } catch (Exception ex) {
+            return Collections.emptyMap();
+        }
     }
 
     private Map<Long, Double> getRatings(Collection<Long> eventIds) {

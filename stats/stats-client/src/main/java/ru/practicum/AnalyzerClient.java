@@ -9,6 +9,7 @@ import ru.practicum.ewm.stats.proto.RecommendationsControllerGrpc;
 import ru.practicum.ewm.stats.proto.RecommendedEventProto;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -28,17 +29,24 @@ public class AnalyzerClient {
                     .addAllEventId(eventIds)
                     .build();
 
-            Iterator<RecommendedEventProto> it = client.getInteractionsCount(req);
+            Iterator<RecommendedEventProto> it =
+                    client.withDeadlineAfter(800, TimeUnit.MILLISECONDS).getInteractionsCount(req);
 
             Map<Long, Double> result = new HashMap<>();
             while (it.hasNext()) {
                 RecommendedEventProto rec = it.next();
-                result.put(rec.getEventId(), extractNumericScore(rec));
+                double score = extractNumericScore(rec);
+                if (Double.isFinite(score)) {
+                    result.put(rec.getEventId(), score);
+                }
             }
             return result;
-        } catch (Exception e) {
-            log.error("Failed to get ratings for events {}", eventIds, e);
-            throw new RuntimeException(e);
+        } catch (io.grpc.StatusRuntimeException ex) {
+            log.warn("Analyzer unavailable ({}). Continue without ratings. ids={}", ex.getStatus(), eventIds);
+            return Collections.emptyMap();
+        } catch (Exception ex) {
+            log.warn("Analyzer error. Continue without ratings. ids={}", eventIds, ex);
+            return Collections.emptyMap();
         }
     }
 

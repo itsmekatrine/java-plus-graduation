@@ -277,7 +277,7 @@ public class EventService {
                 .orElseThrow(() -> new NotFoundException("Event id=" + eventId + " not found"));
 
         if (event.getState() != EventState.PUBLISHED) {
-            throw new ConflictException("Event must be published");
+            throw new NotFoundException("Event id=" + eventId + " not found");
         }
 
         collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_VIEW);

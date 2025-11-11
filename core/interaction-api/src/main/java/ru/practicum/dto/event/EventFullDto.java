@@ -26,7 +26,7 @@ public class EventFullDto {
     LocalDateTime createdOn;
     String description;
     Location location;
-    Integer participantLimit;
+    Integer participantLimit = 0;
     LocalDateTime publishedOn;
     Boolean requestModeration;
     EventState state;

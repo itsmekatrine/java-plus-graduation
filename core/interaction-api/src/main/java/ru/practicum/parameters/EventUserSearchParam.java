@@ -15,7 +15,9 @@ public class EventUserSearchParam {
     private Integer size;
 
     public Pageable getPageable() {
-        int page = from / size;
-        return PageRequest.of(page, size);
+        int f = (from == null || from < 0) ? 0 : from;
+        int s = (size == null || size <= 0) ? 10 : size;
+        int page = f / s;
+        return PageRequest.of(page, s);
     }
 }

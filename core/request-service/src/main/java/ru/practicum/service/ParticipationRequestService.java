@@ -20,10 +20,7 @@ import ru.practicum.repository.ParticipationRequestRepository;
 import ru.practicum.dto.request.ParticipationRequestDto;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -51,9 +48,8 @@ public class ParticipationRequestService {
     }
 
     public ParticipationRequestDto createRequest(Long userId, Long eventId) {
-        if (requestRepository.existsByRequesterIdAndEventId(userId, eventId)) {
-            throw new ConflictException("Participation request already exists");
-        }
+        Optional<ParticipationRequest> existingOpt =
+                requestRepository.findByRequesterIdAndEventId(userId, eventId);
 
         EventFullDto event = eventClient.findEventForInternalUse(eventId);
         if (event.getState() != EventState.PUBLISHED) {
@@ -76,6 +72,26 @@ public class ParticipationRequestService {
 
         boolean autoConfirm = Boolean.FALSE.equals(event.getRequestModeration()) || limit == 0;
 
+        if (existingOpt.isPresent()) {
+            ParticipationRequest existing = existingOpt.get();
+            if (existing.getStatus() == RequestStatus.PENDING || existing.getStatus() == RequestStatus.CONFIRMED) {
+                throw new ConflictException("Participation request already exists");
+            }
+            if (existing.getStatus() == RequestStatus.CANCELED /* || existing.getStatus() == RequestStatus.REJECTED */) {
+                existing.setCreated(LocalDateTime.now());
+                existing.setStatus(autoConfirm ? RequestStatus.CONFIRMED : RequestStatus.PENDING);
+
+                try {
+                    collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_REGISTER);
+                }
+                catch (Exception ignore) {
+                }
+
+                return requestMapper.toDto(requestRepository.save(existing));
+            }
+            throw new ConflictException("Participation request already exists");
+        }
+
         ParticipationRequest request = ParticipationRequest.builder()
                 .created(LocalDateTime.now())
                 .eventId(eventId)
@@ -83,7 +99,11 @@ public class ParticipationRequestService {
                 .status(autoConfirm ? RequestStatus.CONFIRMED : RequestStatus.PENDING)
                 .build();
 
-        collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_REGISTER);
+        try {
+            collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_REGISTER);
+        }
+        catch (Exception ignore) {
+        }
         return requestMapper.toDto(requestRepository.save(request));
     }
 

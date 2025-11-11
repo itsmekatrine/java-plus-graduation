@@ -37,7 +37,6 @@ public class EventFullDto {
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     LocalDateTime publishedOn;
-    
     Boolean requestModeration;
     EventState state;
     Set<String> forbiddenWords;

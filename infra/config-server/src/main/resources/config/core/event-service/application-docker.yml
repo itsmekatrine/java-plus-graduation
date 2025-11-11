@@ -22,13 +22,12 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        jdbc:
+          time_zone: UTC
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   sql:
     init:
       mode: always
-  hibernate:
-    jdbc:
-      time_zone: UTC
 
 logbook:
   format:

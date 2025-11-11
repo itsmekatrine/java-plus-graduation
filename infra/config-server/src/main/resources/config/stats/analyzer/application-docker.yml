@@ -46,7 +46,7 @@ app:
           "client.id": stats.similarity.analyzer
           "group.id": stats.similarity.analyzer
           "key.deserializer": org.apache.kafka.common.serialization.StringDeserializer
-          "value.deserializer": ru.practicum.explore_with_me.deserialization.EventSimilarityDeserializer
+          "value.deserializer": ru.practicum.deserialization.EventSimilarityDeserializer
         topics:
           - stats.events-similarity.v1
         poll-timeout: 1000ms
@@ -58,7 +58,7 @@ app:
           "client.id": stats.user-actions.analyzer
           "group.id": stats.user-actions.analyzer
           "key.deserializer": org.apache.kafka.common.serialization.LongDeserializer
-          "value.deserializer": ru.practicum.explore_with_me.deserialization.UserActionDeserializer
+          "value.deserializer": ru.practicum.deserialization.UserActionDeserializer
         topics:
           - stats.user-actions.v1
         poll-timeout: 1000ms

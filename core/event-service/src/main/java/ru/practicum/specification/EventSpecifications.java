@@ -110,7 +110,7 @@ public class EventSpecifications {
     }
 
     public static Specification<Event> statesByAnyEnum(Collection<? extends Enum<?>> states) {
-        return (root, query, cb) ->{
+        return (root, query, cb) -> {
             if (states == null || states.isEmpty()) return cb.conjunction();
 
             Path<EventState> statePath = root.get("state");

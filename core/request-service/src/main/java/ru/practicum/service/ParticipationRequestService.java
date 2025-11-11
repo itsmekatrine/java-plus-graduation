@@ -83,8 +83,8 @@ public class ParticipationRequestService {
 
                 try {
                     collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_REGISTER);
-                }
-                catch (Exception ignore) {
+                } catch (Exception ignore) {
+
                 }
 
                 return requestMapper.toDto(requestRepository.save(existing));
@@ -101,9 +101,10 @@ public class ParticipationRequestService {
 
         try {
             collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_REGISTER);
+        } catch (Exception ignore) {
+
         }
-        catch (Exception ignore) {
-        }
+
         return requestMapper.toDto(requestRepository.save(request));
     }
 

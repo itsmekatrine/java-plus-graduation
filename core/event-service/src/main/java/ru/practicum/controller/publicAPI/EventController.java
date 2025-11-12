@@ -29,6 +29,7 @@ public class EventController {
 
     private final EventService eventService;
     private final CommentClient commentClient;
+    private static final String HEADER_USER_ID = "X-EWM-USER-ID";
 
     @GetMapping
     public List<EventShortDto> getEvents(
@@ -71,8 +72,7 @@ public class EventController {
     }
 
     @GetMapping("/{id}")
-    public EventFullDto getEventById(@PathVariable Long id, @RequestHeader("X-EWM-USER-ID") long userId) {
-
+    public EventFullDto getEventById(@PathVariable Long id, @RequestHeader(name = HEADER_USER_ID) long userId) {
         EventFullDto event = eventService.getEventByIdPublic(id, userId);
         log.info("Returned event {} for GET /events/{}", event.getId(), id);
         return event;
@@ -87,13 +87,13 @@ public class EventController {
     }
 
     @GetMapping("/recommendations")
-    public List<EventFullDto> getRecommendations(@RequestHeader("X-EWM-USER-ID") Long userId) {
+    public List<EventFullDto> getRecommendations(@RequestHeader(name = HEADER_USER_ID) Long userId) {
         log.info("Get recommendations for user with id: {}", userId);
         return eventService.getRecommendations(userId);
     }
 
     @PutMapping("{eventId}/like")
-    public void likeEvent(@RequestHeader("X-EWM-USER-ID") Long userId, @PathVariable Long eventId) {
+    public void likeEvent(@RequestHeader(name = HEADER_USER_ID) Long userId, @PathVariable Long eventId) {
         log.info("Like event with id: {} for user with id: {}", eventId, userId);
         eventService.likeEvent(userId, eventId);
     }

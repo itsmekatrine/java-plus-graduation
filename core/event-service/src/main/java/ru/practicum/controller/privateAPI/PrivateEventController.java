@@ -33,8 +33,8 @@ public class PrivateEventController {
 
     @GetMapping
     public List<EventShortDto> getUsersEvents(@PathVariable @Positive Long userId,
-                                              @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
-                                              @RequestParam(defaultValue = "10") @Positive Integer size) {
+                                              @RequestParam(value = "from", defaultValue = "0") @PositiveOrZero Integer from,
+                                              @RequestParam(value = "size", defaultValue = "10") @Positive Integer size) {
         log.info("Getting events by user id={}, from={}, size={}", userId, from, size);
         EventUserSearchParam params = EventUserSearchParam.builder()
                 .userId(userId)

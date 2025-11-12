@@ -15,5 +15,5 @@ public interface CommentClient {
     @GetMapping("/{eventId}/comments")
     List<CommentWithUserDto> getCommentsByEventId(@PathVariable Long eventId,
                                                   @RequestParam Integer from,
-                                                  @RequestParam Integer size) throws FeignException;;
+                                                  @RequestParam Integer size) throws FeignException;
 }

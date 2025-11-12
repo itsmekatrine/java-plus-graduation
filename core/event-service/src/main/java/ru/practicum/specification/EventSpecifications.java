@@ -4,19 +4,21 @@ import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 import ru.practicum.entity.Event;
-import ru.practicum.dto.event.EventState;
+import ru.practicum.entity.EventState;
 import ru.practicum.parameters.EventAdminSearchParam;
 import ru.practicum.parameters.PublicSearchParam;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class EventSpecifications {
     public static Specification<Event> userIdIs(List<Long> userIds) {
         return (root, query, criteriaBuilder) -> {
             if (userIds == null || userIds.isEmpty()) {
-                return criteriaBuilder.conjunction(); // Всегда истина
+                return criteriaBuilder.conjunction();
             }
             return root.get("initiatorId").in(userIds);
         };
@@ -37,10 +39,8 @@ public class EventSpecifications {
             if (states == null || states.isEmpty()) {
                 return criteriaBuilder.conjunction();
             }
-            Path<String> statePath = root.get("state");
-            return statePath.in(states.stream()
-                    .map(Enum::name)
-                    .collect(Collectors.toList()));
+            Path<EventState> statePath = root.get("state");
+                return statePath.in(states);
         };
     }
 
@@ -71,7 +71,7 @@ public class EventSpecifications {
     public static Specification<Event> textInAnnotationOrDescription(String text) {
         return (root, query, criteriaBuilder) -> {
             if (text == null || text.isBlank()) {
-                return criteriaBuilder.conjunction(); // Игнорируем пустой текст
+                return criteriaBuilder.conjunction();
             }
 
             Predicate annotationPredicate = criteriaBuilder.like(
@@ -89,19 +89,46 @@ public class EventSpecifications {
 
     public static Specification<Event> eventAdminSearchParamSpec(EventAdminSearchParam params) {
         return Specification.where(EventSpecifications.userIdIs(params.getUsers()))
-                .and(EventSpecifications.states(params.getStates()))
-                .and(EventSpecifications.categories(params.getCategories()))
-                .and(EventSpecifications.startBefore(params.getRangeEnd()))
-                .and(EventSpecifications.startAfter(params.getRangeStart()));
+                .and(statesByAnyEnum(params.getStates()))
+                .and(categories(params.getCategories()))
+                .and(startBefore(params.getRangeEnd()))
+                .and(startAfter(params.getRangeStart()));
     }
 
     public static Specification<Event> eventPublicSearchParamSpec(PublicSearchParam params) {
-        return Specification.where(EventSpecifications.textInAnnotationOrDescription(params.getText()))
-                .and(EventSpecifications.categories(params.getCategories()))
-                .and(EventSpecifications.isPaid(params.getPaid()))
-                .and(EventSpecifications.startBefore(params.getRangeEnd()))
-                .and(EventSpecifications.startAfter(params.getRangeStart()))
-                .and(EventSpecifications.states(List.of(EventState.PUBLISHED)));
+        LocalDateTime effectiveStart = params.getRangeStart();
+        if (effectiveStart == null && params.getRangeEnd() == null) {
+            effectiveStart = LocalDateTime.now();
+        }
+
+        return Specification.where(textInAnnotationOrDescription(params.getText()))
+                .and(categories(params.getCategories()))
+                .and(isPaid(params.getPaid()))
+                .and(startBefore(params.getRangeEnd()))
+                .and(startAfter(effectiveStart))
+                .and(states(List.of(EventState.PUBLISHED)));
     }
 
+    public static Specification<Event> statesByAnyEnum(Collection<? extends Enum<?>> states) {
+        return (root, query, cb) -> {
+            if (states == null || states.isEmpty()) return cb.conjunction();
+
+            Path<EventState> statePath = root.get("state");
+
+            List<EventState> entityStates = states.stream()
+                    .map(Enum::name)
+                    .map(name -> {
+                        try {
+                            return EventState.valueOf(name);
+                        } catch (IllegalArgumentException ex) {
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            if (entityStates.isEmpty()) return cb.conjunction();
+            return statePath.in(entityStates);
+        };
+    }
 }

@@ -13,6 +13,10 @@
     <name>stats</name>
 
     <modules>
-        <module>stats-server</module>
+        <module>serialization</module>
+        <module>collector</module>
+        <module>stats-client</module>
+        <module>aggregator</module>
+        <module>analyzer</module>
     </modules>
 </project>

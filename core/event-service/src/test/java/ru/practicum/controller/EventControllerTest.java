@@ -54,7 +54,7 @@ public class EventControllerTest {
                 .paid(true)
                 .eventDate(LocalDateTime.now().plusDays(5))
                 .initiator(new UserShortDto(2L, "Вася"))
-                .views(10L)
+                .rating(4.7)
                 .confirmedRequests(3L)
                 .build();
 
@@ -70,7 +70,7 @@ public class EventControllerTest {
                 .andExpect(jsonPath("$[0].paid").value(dto.getPaid()))
                 .andExpect(jsonPath("$[0].eventDate").exists())
                 .andExpect(jsonPath("$[0].initiator.name").value(dto.getInitiator().getName()))
-                .andExpect(jsonPath("$[0].views").value(dto.getViews()))
+                .andExpect(jsonPath("$[0].rating").value(dto.getRating()))
                 .andExpect(jsonPath("$[0].confirmedRequests").value(dto.getConfirmedRequests()));
     }
 
@@ -84,7 +84,7 @@ public class EventControllerTest {
                 .paid(true)
                 .eventDate(LocalDateTime.now().plusDays(5))
                 .initiator(new UserShortDto(2L, "Вася"))
-                .views(10L)
+                .rating(4.7)
                 .confirmedRequests(3L)
                 .description("Подробное описание")
                 .participantLimit(100)
@@ -106,7 +106,7 @@ public class EventControllerTest {
                 .andExpect(jsonPath("$.paid").value(dto.getPaid()))
                 .andExpect(jsonPath("$.eventDate").exists())
                 .andExpect(jsonPath("$.initiator.name").value(dto.getInitiator().getName()))
-                .andExpect(jsonPath("$.views").value(dto.getViews()))
+                .andExpect(jsonPath("$.rating").value(dto.getRating()))
                 .andExpect(jsonPath("$.confirmedRequests").value(dto.getConfirmedRequests()))
                 .andExpect(jsonPath("$.description").value(dto.getDescription()))
                 .andExpect(jsonPath("$.participantLimit").value(dto.getParticipantLimit()))

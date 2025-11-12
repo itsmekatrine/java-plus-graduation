@@ -100,9 +100,18 @@ public class ErrorHandler {
     public ResponseEntity<ApiError> handleFeign(feign.FeignException e) {
         int raw = e.status();
         HttpStatus status = (raw >= 400 && raw < 600) ? HttpStatus.valueOf(raw) : HttpStatus.BAD_GATEWAY;
+
+        String reason = switch (status) {
+            case BAD_REQUEST -> "Incorrectly made request.";
+            case FORBIDDEN -> "Access denied.";
+            case NOT_FOUND -> "The required object was not found.";
+            case CONFLICT -> "For the requested operation the conditions are not met.";
+            default -> "Upstream request failed.";
+        };
+
         ApiError body = ApiError.builder()
                 .status(status.name())
-                .reason("Upstream request failed.")
+                .reason(reason)
                 .message(e.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
